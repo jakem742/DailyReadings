@@ -1,0 +1,16 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="body_text_size">16dp</dimen>
+    <dimen name="title_text_size">16dp</dimen>
+    <dimen name="padding_sides_home_item">16dp</dimen>
+    <dimen name="padding_above_home_item">16dp</dimen>
+    <dimen name="padding_around_settings_btn">8dp</dimen>
+    <dimen name="margin_sides_home_item">24dp</dimen>
+    <dimen name="margin_settings_btn">8dp</dimen>
+    <dimen name="margin_above_home_item">8dp</dimen>
+    <dimen name="margin_below_home_item">8dp</dimen>
+    <dimen name="map_dot_marker_size">15dp</dimen>
+    <dimen name="map_dot_marker_stroke_size">15dp</dimen>
+</resources>

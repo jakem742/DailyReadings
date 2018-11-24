@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/reading_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_above_home_item"
+        android:layout_marginBottom="@dimen/margin_below_home_item"
+        android:background="@drawable/rounded_corner_light"
+        android:focusable="true"
+        android:foreground="?android:attr/selectableItemBackground"
+        android:lineSpacingMultiplier="1.3"
+        android:longClickable="true"
+        android:padding="16dp"
+        android:text="TextView"
+        android:textIsSelectable="false"
+        android:textSize="24sp" />
+</FrameLayout>

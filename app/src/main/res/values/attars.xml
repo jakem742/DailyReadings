@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="colourBodyText" format="reference|color" />
+    <attr name="colourBodyTextNight" format="reference|color" />
+    <attr name="colourRefText" format="reference|color" />
+
+    <!-- OLD APP COLOURS-->
+
+    <attr name="colourDark" format="reference|color" />
+    <attr name="colourLight" format="reference|color" />
+    <attr name="colorDarkTransparent" format="reference|color" />
+    <attr name="colorDarkSecondary" format="reference|color" />
+    <attr name="colorLightBackground" format="reference|color" />
+    <attr name="colorLightSecondary" format="reference|color" />
+    <attr name="colorOverlayTransparent" format="reference|color" />
+</resources>
