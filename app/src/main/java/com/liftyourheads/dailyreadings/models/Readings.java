@@ -15,6 +15,7 @@ import java.util.HashMap;
 import timber.log.Timber;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.BIBLE;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.MONTHS;
 
 
@@ -43,7 +44,9 @@ public class Readings {
     private Boolean leapDay;
     private Boolean isCommentsInDatabase;
     private Integer numChapters;
+    private String[] chapterTitles;
     private static final String TAG = "Reading";
+    private Integer[] chapterVerses;
 
 
 
@@ -384,6 +387,7 @@ public class Readings {
             numChapters = 1;
             this.chapters = new Integer[numChapters];
             this.chapters[0] = Integer.parseInt(chaptersSplit[0]);
+            this.chapterTitles = new String[] {this.bookName[0] + " " + this.chapters[0]};
 
             //Split start & end verses
             String[] versesPartial = chaptersSplit[1].split("-");
@@ -401,11 +405,13 @@ public class Readings {
                 chaptersSplit = chapters.split("-");
                 numChapters = Integer.parseInt(chaptersSplit[1]) - Integer.parseInt(chaptersSplit[0]) + 1; // +1 accounts for initial chapter ie. 45-43 = 2 ( +1 for starting chapter = 3)
                 this.chapters = new Integer[numChapters];
-
                 this.chapters[0] = Integer.parseInt(chaptersSplit[0]);
+                this.chapterTitles = new String[numChapters];
+                this.chapterTitles[0] = this.bookName[0] + " " + this.chapters[0];
 
                 for (int i = 1; i < numChapters; i++) {
 
+                    this.chapterTitles[i] = this.bookName[0] + " " + this.chapters[i];
                     this.chapters[i] = this.chapters[(i-1)] + 1;
 
                 }
@@ -417,6 +423,7 @@ public class Readings {
                 chaptersSplit = chapters.split(",");
                 numChapters = chaptersSplit.length;
                 this.chapters = new Integer[numChapters];
+                this.chapterTitles = new String[numChapters];
 
 
                 for (int i = 0; i < numChapters; i++) {
@@ -425,27 +432,31 @@ public class Readings {
 
                 }
 
+                this.chapterTitles[0] = this.bookName[0] + " " + this.chapters[0];
+                this.chapterTitles[1] = this.bookName[0] + " " + this.chapters[1];
+
 
             } else {
 
 
                 if (!chapters.equals("")) {
-                    //Only one chapter
+                    //Only one chapter out of several
                     numChapters = 1;
                     this.chapters = new Integer[numChapters];
-
                     this.chapters[0] = Integer.parseInt(chapters);
+                    this.chapterTitles = new String[]{this.bookName[0] + " " + this.chapters[0]};
 
                 } else if (!multipleBooks) {
 
-                    //Only one chapter
+                    //Only one chapter in book
                     numChapters = 1;
                     this.chapters = new Integer[numChapters];
-
+                    this.chapterTitles = new String[]{this.bookName[0]};
                     this.singleChapterBook = true;
                     this.chapters[0] = 1;
                 } else { //Only true for 2 + 3 Jn
 
+                    this.chapterTitles = new String[2];
                     //Two chapters
                     numChapters = 2;
                     this.chapters = new Integer[numChapters];
@@ -453,6 +464,8 @@ public class Readings {
                     //Always first chapter of book
                     this.chapters[0] = 1;
                     this.chapters[1] = 1;
+                    this.chapterTitles[0] = this.bookName[0];
+                    this.chapterTitles[1] = this.bookName[1];
 
                 }
 
@@ -460,6 +473,10 @@ public class Readings {
 
         }
 
+    }
+
+    public String[] getChapterTitles() {
+        return chapterTitles;
     }
 
     private Integer[] getBookIndex() {
@@ -564,6 +581,8 @@ public class Readings {
         getVerses(this.bookName, this.chapters, this.isChapterPartial(), this.versesPartialChapter);
 
         HashMap<String, String> verse;
+        HashMap<String, String> chapter;
+
 
         Integer curVerse;
 
@@ -581,7 +600,8 @@ public class Readings {
         for (int book = 0; book < this.bookName.length; book++) {
             for (Integer i = 0; i < verses[book].length; i++) {
 
-                chapterStartCounters[i] = verses[book][i].length;
+                if (!multipleBooks) chapterStartCounters[i] = verses[book][i].length;
+                else chapterStartCounters[i] = verses[book][0].length;
 
                 //Set starting verse to 0
                 if (i != 0) curVerse = 1;
@@ -600,6 +620,18 @@ public class Readings {
 
                         //Skip verse if it is blank (in case of modern translations)
                         if (verses[book][i][j].equals("")) continue;
+
+                        //Add chapter header
+                        if (j == 0) {
+                            chapter = new HashMap<>();
+                            chapter.put("Chapter Header","True");
+
+                            if (multipleBooks) chapter.put("Title",this.chapterTitles[book]);
+                            else chapter.put("Title",this.chapterTitles[i]);
+
+                            verseList.add(chapter);
+                        }
+
 
                         //For list view
                         verse = new HashMap<>();
@@ -685,22 +717,50 @@ public class Readings {
                 }
 
 
+                chapterVerses = new Integer[chapters.length];
+
                 //Iterate through each chapter and add to array
-                for (int i = 0; i < chapters.length; i++) {
+                if (!multipleBooks) {
 
-                    //Customise query to match current chapter
-                    if (!isPartialChapter) {
+                    for (int i = 0; i < chapters.length; i++) {
 
-                        reading = bibleDB.rawQuery("SELECT * FROM verses WHERE book_number = " + bookNumber + " AND chapter = " + chapters[i].toString(), null);
+                        //Customise query to match current chapter
+                        if (!isPartialChapter) {
 
-                    } else {
+                            reading = bibleDB.rawQuery("SELECT * FROM verses WHERE book_number = " + bookNumber + " AND chapter = " + chapters[i].toString(), null);
 
-                        reading = bibleDB.rawQuery("SELECT * FROM verses WHERE book_number = " + bookNumber + " AND chapter = " + chapters[i].toString() + " AND verse BETWEEN " + versesPartial[0] + " AND " + versesPartial[1], null);
+                        } else {
+
+                            reading = bibleDB.rawQuery("SELECT * FROM verses WHERE book_number = " + bookNumber + " AND chapter = " + chapters[i].toString() + " AND verse BETWEEN " + versesPartial[0] + " AND " + versesPartial[1], null);
+
+                        }
+
+                        //Define size of array for this chapter
+                        verses[counter][i] = new String[reading.getCount()];
+                        chapterVerses[i] = reading.getCount();
+
+                        int contentIndex = reading.getColumnIndex("text");
+
+
+                        reading.moveToFirst();
+                        int j = 0;
+
+                        do {
+
+                            verses[counter][i][j] = reading.getString(contentIndex).replaceAll("’", "'").replaceAll("<f>.*?</f>", "");//.replaceAll("<pb/>", "")
+                            j++;
+
+                        } while (reading.moveToNext());
 
                     }
 
+                } else {
+
+                    reading = bibleDB.rawQuery("SELECT * FROM verses WHERE book_number = " + bookNumber + " AND chapter = 1", null); //Chapter is always 1 for multiple books
+
                     //Define size of array for this chapter
-                    verses[counter][i] = new String[reading.getCount()];
+                    verses[counter][0] = new String[reading.getCount()];
+                    chapterVerses[counter] = reading.getCount();
 
                     int contentIndex = reading.getColumnIndex("text");
 
@@ -710,11 +770,10 @@ public class Readings {
 
                     do {
 
-                        verses[counter][i][j] = reading.getString(contentIndex).replaceAll("’", "'").replaceAll("<f>.*?</f>", "");//.replaceAll("<pb/>", "")
+                        verses[counter][0][j] = reading.getString(contentIndex).replaceAll("’", "'").replaceAll("<f>.*?</f>", "");//.replaceAll("<pb/>", "")
                         j++;
 
                     } while (reading.moveToNext());
-
                 }
 
                 counter++;
@@ -858,5 +917,9 @@ public class Readings {
     }
 
     */
+
+    public Integer[] getNumVerses() {
+        return chapterVerses;
+    }
 
 }

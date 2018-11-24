@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+        android:id="@+id/chapterTitle_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/margin_text_title"
+        android:layout_weight="1"
+        android:focusable="true"
+        android:gravity="center_horizontal"
+        android:lineSpacingMultiplier="1.5"
+        android:longClickable="true"
+            android:padding="@dimen/padding_title_text"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:textAllCaps="false"
+            android:textColor="@color/colorPrimary"
+            android:textIsSelectable="false"
+            android:textSize="@dimen/title_text_size" />
+        <!--android:textColor="#e0e0e0"-->
+
+    </LinearLayout>

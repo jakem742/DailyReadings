@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     BottomNavigationView navigation;
 
     static TabLayout readingsTabs;
+    AppBarLayout appBar;
 
     public static HashMap<String,Fragment> fragments = new HashMap<>();
 
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         navigation = findViewById(R.id.navigation);
         readingsTabs = findViewById(R.id.reading_tab_layout);
         readingsTabs.setVisibility(View.GONE); //Hide tabs on home page!
+        appBar = findViewById(R.id.main_appbar);
 
         fragmentManager = getSupportFragmentManager();
         mainViewPager.setOffscreenPageLimit(3);
@@ -224,6 +226,8 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
             public void onPageSelected(int position) {
                 navigation.getMenu().getItem(position).setChecked(true);
 
+                appBar.setExpanded(false, false);
+
                 if (position == 0) {
                     readingsTabs.setVisibility(View.GONE);
                     navigation.setVisibility(View.GONE);
@@ -232,8 +236,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
                     readingsTabs.setVisibility(View.VISIBLE);
                     navigation.setVisibility(View.VISIBLE);
                 } else if ( position == 3) {
-                    AppBarLayout appBarLayout = findViewById(R.id.main_appbar);
-                    appBarLayout.setExpanded(true,true);
+                    appBar.setExpanded(true,true);
                 }
 
                 prevPage = position;

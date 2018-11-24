@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class ReadingFragment extends Fragment {
@@ -73,7 +74,6 @@ public class ReadingFragment extends Fragment {
     public void setBibleListContent(View view) {
 
         ArrayList<HashMap<String,String>> reading = MainActivity.reading[this.readingNum].getReadingVerses();
-
 
         RecyclerView readingRecyclerView = view.findViewById(R.id.readingRecyclerView);
         readingRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
