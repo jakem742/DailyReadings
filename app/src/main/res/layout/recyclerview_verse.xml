@@ -19,7 +19,7 @@
             android:longClickable="true"
             android:textIsSelectable="true"
             android:textSize="14sp"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/colorPrimary" />
 
     <TextView
         android:id="@+id/verseContent"

@@ -336,8 +336,8 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
             //if(getSupportFragmentManager().findFragmentById(R.id.bibleMapView) != null) {
                 MapFragment mapFragment = (MapFragment) fragments.get("Map");
-                mapFragment.setMarkers(curReading);
-                mapFragment.zoomCamera();
+                mapFragment.setCurLayer(curReading);
+                mapFragment.zoomExtents(curReading);
             //} else Log.i(TAG,"No map fragment to replace!");
 
             trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);

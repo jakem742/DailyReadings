@@ -10,13 +10,10 @@ import android.widget.TextView;
 import com.liftyourheads.dailyreadings.R;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 public class ReadingVersesRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private String[] chapterTitles;
     private ArrayList<HashMap<String, String>> reading;
     private LayoutInflater mInflater;
     private ItemClickListener mClickListener;
@@ -24,9 +21,9 @@ public class ReadingVersesRecyclerViewAdapter extends RecyclerView.Adapter<Recyc
     private final static int VERSE = 1;
 
     // data is passed into the constructor
-    public ReadingVersesRecyclerViewAdapter(Context context, ArrayList<HashMap<String, String>> verses) {
+    public ReadingVersesRecyclerViewAdapter(Context context, ArrayList<HashMap<String, String>> data) {
         this.mInflater = LayoutInflater.from(context);
-        this.reading = verses;
+        this.reading = data;
     }
 
     // inflates the row layout from xml when needed
@@ -39,7 +36,7 @@ public class ReadingVersesRecyclerViewAdapter extends RecyclerView.Adapter<Recyc
                 view = mInflater.inflate(R.layout.recyclerview_verse, parent, false);
                 return new ViewHolderVerse(view);
             case TITLE:
-                view = mInflater.inflate(R.layout.recyclerview_chapter_title, parent, false);
+                view = mInflater.inflate(R.layout.recyclerview_title, parent, false);
                 return new ViewHolderChapterTitle(view);
         }
 
@@ -80,8 +77,6 @@ public class ReadingVersesRecyclerViewAdapter extends RecyclerView.Adapter<Recyc
 
         if (reading.get(position).get("Chapter Header") != null ) return TITLE;
         else return VERSE;
-
-        //TODO: More accurate viewtypes!
 
     }
 

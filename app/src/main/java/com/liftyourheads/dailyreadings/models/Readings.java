@@ -5,12 +5,18 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
+import android.util.Log;
 
 import com.liftyourheads.dailyreadings.activities.MainActivity;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.GeoJson;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import timber.log.Timber;
 
@@ -43,10 +49,12 @@ public class Readings {
     private Boolean multipleBooks = false;
     private Boolean leapDay;
     private Boolean isCommentsInDatabase;
+    private int numPlaces;
     private Integer numChapters;
     private String[] chapterTitles;
     private static final String TAG = "Reading";
     private Integer[] chapterVerses;
+    private StringBuilder placeJson;
 
 
 
@@ -100,6 +108,9 @@ public class Readings {
 
         //Retrieve Places for map
         processPlaces();
+
+        //Convert places into usable format
+        createPlacesJson();
 
     }
 
@@ -216,6 +227,14 @@ public class Readings {
 
 
             if (commentPost != null) {
+
+                //Add comments header to top of list
+                item = new HashMap<>();
+                item.put("Chapter Header","True");
+                item.put("Title","Comments");
+                commentList.add(item);
+
+
                 for (int i = 1; i < commentPost.length; i++) {
 
                     // Check if current position is less than total number of comments for the specified reading
@@ -309,6 +328,7 @@ public class Readings {
         Integer[] bookPosition = this.getBookIndex();
         Integer[] bookChapters = this.getChapters();
         Cursor readingCursor,placesCursor;
+        ArrayList<String> placeNamesDone = new ArrayList<>();
         places = new ArrayList<>();
 
         //Iterating through each chapter in reading
@@ -334,27 +354,33 @@ public class Readings {
 
                     for (String placeName : placesArray) {
 
-                        placesCursor = readingsDB.rawQuery("SELECT * FROM bible_places_NAME WHERE Name = '" + placeName.replaceAll("\'","\'\'") + "\'", null);
-                        Integer latColumn = placesCursor.getColumnIndex("Lat");
+                        if(!placeNamesDone.contains(placeName)) { //Check that the place isn't already on the list!
 
-                        if (placesCursor.moveToFirst()) {
-                            do {
-                                String placeLat = placesCursor.getString(latColumn);
-                                String placeLong = placesCursor.getString(latColumn + 1);
+                            placeNamesDone.add(placeName);
 
-                                String[] placeData = new String[]{placeName, placeLat, placeLong};
+                            placesCursor = readingsDB.rawQuery("SELECT * FROM bible_places_NAME WHERE Name = '" + placeName.replaceAll("\'", "\'\'") + "\'", null);
+                            Integer latColumn = placesCursor.getColumnIndex("Lat");
 
-                                Timber.i("Place Info: " + Arrays.toString(placeData));
-                                places.add(placeData);
+                            if (placesCursor.moveToFirst()) {
+                                do {
+                                    String placeLat = placesCursor.getString(latColumn);
+                                    String placeLong = placesCursor.getString(latColumn + 1);
 
-                            } while (placesCursor.moveToNext());
 
-                        } else {
-                            Timber.i("Place Info:" + "Couldn't find '" + placeName + "' in the database!");
+                                    String[] placeData = new String[]{placeName, placeLat, placeLong};
+                                    //Log.i(TAG, "Place Info: " + Arrays.toString(placeData));
+                                    places.add(placeData);
+
+                                } while (placesCursor.moveToNext());
+
+
+                            } else {
+                                Log.i(TAG, "Couldn't find '" + placeName + "' in the database!");
+                            }
+
+                            placesCursor.close();
+
                         }
-
-                        placesCursor.close();
-
                     }
 
                 } while (readingCursor.moveToNext());
@@ -367,6 +393,7 @@ public class Readings {
         }
 
         readingsDB.close();
+
     }
 
     public ArrayList<String[]> getPlaces() {
@@ -483,6 +510,40 @@ public class Readings {
 
         return this.bookPosition;
 
+    }
+
+    private void createPlacesJson(){
+
+        //if(hasPlaces) {
+            placeJson = new StringBuilder();
+            placeJson.append("{\"type\": \"FeatureCollection\",\"features\": [");
+
+            for (String[] place : places) {
+
+                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"Name\": \"" + place[0] +"\"},\"geometry\": {\"type\": \"Point\",\"coordinates\": [" + place[2].replaceAll("[^\\d.]", "") + "," + place[1].replaceAll("[^\\d.]", "") + "]}}");
+                if (places.get(places.size()-1) != place ) placeJson.append(",");
+            }
+
+            placeJson.append("]}");
+        //}
+
+    }
+
+    public String getPlacesAsString(){
+        Log.i(TAG,placeJson.toString());
+        //if (hasPlaces)
+        return placeJson.toString();
+        //else return null;
+
+    }
+
+    public Boolean placesExist() {
+
+        return (numPlaces > 0);
+    }
+
+    public int getNumPlaces() {
+        return numPlaces;
     }
 
     private void setFullName() {
