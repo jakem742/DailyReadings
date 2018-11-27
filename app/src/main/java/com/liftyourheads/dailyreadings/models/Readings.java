@@ -3,6 +3,8 @@ package com.liftyourheads.dailyreadings.models;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.preference.Preference;
+import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
@@ -438,8 +440,8 @@ public class Readings {
 
                 for (int i = 1; i < numChapters; i++) {
 
-                    this.chapterTitles[i] = this.bookName[0] + " " + this.chapters[i];
                     this.chapters[i] = this.chapters[(i-1)] + 1;
+                    this.chapterTitles[i] = this.bookName[0] + " " + this.chapters[i];
 
                 }
 
@@ -520,7 +522,7 @@ public class Readings {
 
             for (String[] place : places) {
 
-                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"Name\": \"" + place[0] +"\"},\"geometry\": {\"type\": \"Point\",\"coordinates\": [" + place[2].replaceAll("[^\\d.]", "") + "," + place[1].replaceAll("[^\\d.]", "") + "]}}");
+                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"name\": \"" + place[0] +"\",\"selected\": false},\"geometry\": {\"type\": \"Point\",\"coordinates\": [" + place[2].replaceAll("[^\\d.]", "") + "," + place[1].replaceAll("[^\\d.]", "") + "]}}");
                 if (places.get(places.size()-1) != place ) placeJson.append(",");
             }
 
@@ -627,7 +629,7 @@ public class Readings {
     */
 
 
-    private void updateVerses() {
+    public void updateVerses() {
 
         //Update reading verses
         verseList = new ArrayList<>();
@@ -668,12 +670,12 @@ public class Readings {
                 if (i != 0) curVerse = 1;
 
                 // Add chapter title to start
-                if (this.chapters.length > 1) {
+                //if (this.chapters.length > 1) {
 
                     if (i != 0) verseParagraphs.append("<br/><br/>");
-                    verseParagraphs.append("<big><span style=\"color:#9ccc65\"><b>").append(this.bookName[book]).append(" ").append(Integer.toString(this.chapters[i])
-                    ).append("</b></span></big><br/>");
-                }
+                    verseParagraphs.append("<big><span style=\"color:#9ccc65\">").append(this.bookName[book]).append(" ").append(Integer.toString(this.chapters[i])
+                    ).append("</span></big><br/>");
+                //}
 
                 try {
 
@@ -749,7 +751,9 @@ public class Readings {
 
         //Open the db for current translation
         //TODO: Allow for different translations
-        SQLiteDatabase bibleDB = context.openOrCreateDatabase("ESV.db", MODE_PRIVATE, null);
+        String translation = PreferenceManager.getDefaultSharedPreferences(context).getString("translation","ESV");
+        Log.i(TAG,translation);
+        SQLiteDatabase bibleDB = context.openOrCreateDatabase(translation + ".db", MODE_PRIVATE, null);
         Cursor reading = null;
 
         //Initialise verses array based on number of chapters
@@ -970,14 +974,12 @@ public class Readings {
         return leapDay;
     }
 
-    /*
+
     public String getVerseParagraphs() {
 
         return verseParagraphs.toString();
 
     }
-
-    */
 
     public Integer[] getNumVerses() {
         return chapterVerses;

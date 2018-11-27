@@ -3,5 +3,6 @@
     <solid android:color="@color/colorPrimaryDark"/>
     <stroke
         android:width="@dimen/map_dot_marker_stroke_size"
-        android:color="#444444"/>
+        android:color="@color/colorDark"/>
+    <size android:width="@dimen/map_dot_marker_size" android:height="@dimen/map_dot_marker_size"/>
 </shape>

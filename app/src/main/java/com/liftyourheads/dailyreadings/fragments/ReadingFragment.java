@@ -4,15 +4,21 @@ import com.liftyourheads.dailyreadings.activities.MainActivity;
 import com.liftyourheads.dailyreadings.adapters.ReadingVersesRecyclerViewAdapter;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,12 +81,34 @@ public class ReadingFragment extends Fragment {
 
         ArrayList<HashMap<String,String>> reading = MainActivity.reading[this.readingNum].getReadingVerses();
 
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+        Boolean paragraphs = sharedPreferences.getBoolean("paragraphs",false);
+
+        NestedScrollView readingScrollView = view.findViewById(R.id.biblePassageScrollView);
+        TextView readingTextView = view.findViewById(R.id.biblePassageTextView);
         RecyclerView readingRecyclerView = view.findViewById(R.id.readingRecyclerView);
-        readingRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        readingAdapter = new ReadingVersesRecyclerViewAdapter(getActivity(), reading);
-        //readingAdapter.setClickListener(this);
-        readingRecyclerView.setAdapter(readingAdapter);
-        readingRecyclerView.setHasFixedSize(true);
+
+        if (paragraphs) {
+
+            readingScrollView.setVisibility(View.VISIBLE);
+            readingTextView.setVisibility(View.VISIBLE);
+            readingRecyclerView.setVisibility(View.GONE);
+
+            readingTextView.setText(Html.fromHtml(MainActivity.reading[readingNum].getVerseParagraphs()));
+
+
+        } else {
+
+            readingScrollView.setVisibility(View.INVISIBLE);
+            readingTextView.setVisibility(View.INVISIBLE);
+            readingRecyclerView.setVisibility(View.VISIBLE);
+
+            readingRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+            readingAdapter = new ReadingVersesRecyclerViewAdapter(getActivity(), reading);
+            //readingAdapter.setClickListener(this);
+            readingRecyclerView.setAdapter(readingAdapter);
+            readingRecyclerView.setHasFixedSize(true);
+        }
 
     }
 

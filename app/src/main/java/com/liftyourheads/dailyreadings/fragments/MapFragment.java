@@ -12,7 +12,11 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAnchor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textHaloBlur;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textHaloColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textHaloWidth;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textJustify;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textOffset;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textOptional;
@@ -105,6 +109,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     private static final String MAKI_ICON_CIRCLE_STROKED = "circle-stroked-15";
     private static final String MAKI_ICON_CIRCLE = "circle-15";
+    private static final int ICON_CIRCLE_CUSTOM = R.drawable.map_circle_custom;
 
     private OnFragmentInteractionListener mListener;
 
@@ -157,6 +162,8 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                     zoomExtents(curReading);
                     setClickListener();
 
+                    //Todo: fix screen rotate crash
+
                     ////////// OFFLINE MAP DATA STORAGE /////////
 
 
@@ -182,7 +189,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 if (!features.isEmpty()) {
                     StringBuilder names = new StringBuilder();
                     for (Feature feature : features) {
-                         names.append(feature.getStringProperty("Name")).append(", ");
+                         names.append(feature.getStringProperty("name")).append(", ");
                     }
                     //Feature selectedFeature = features.get(0);
                     //String title = selectedFeature.getStringProperty("Name");
@@ -199,6 +206,16 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
         String readingSourceString;
 
+        //IconFactory iconFactory = IconFactory.getInstance(getContext());
+        //Icon icon = iconFactory.fromResource(ICON_CIRCLE_CUSTOM);
+        Bitmap custom_icon = drawableToBitmap(getResources().getDrawable(R.drawable.map_circle_custom));
+
+        //Icon icon = IconUtils.drawableToIcon(getContext(),R.drawable.map_circle_custom,255,"marker");
+
+        Bitmap icon = BitmapFactory.decodeResource(getActivity().getResources(),R.drawable.map_circle_custom);
+
+        map.addImage("icon_circle_custom",custom_icon);
+
         for (Integer i = 0; i < 3; i++) {
 
             //if (reading[i].placesExist()) {
@@ -210,14 +227,18 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 symbolLayers[i] = new SymbolLayer("locations-" + i.toString(), "reading-places-" + i.toString());
                 symbolLayers[i].setProperties(
                         visibility(VISIBLE),
-                        iconImage(MAKI_ICON_CIRCLE),
+                        iconImage("icon_circle_custom"),
                         iconAllowOverlap(true),
                         textAllowOverlap(false),
                         textOptional(true),
-                        textField("{Name}"),
+                        textField("{name}"),
                         textOffset(new Float[]{1f, 0f}),
                         iconAnchor(ICON_ANCHOR_CENTER),
                         iconColor(Color.RED),
+                        textColor(getContext().getResources().getColor(R.color.colorDark)),
+                        textHaloColor(Color.LTGRAY),
+                        textHaloBlur(1.5f),
+                        textHaloWidth(1f),
                         textJustify(TEXT_JUSTIFY_LEFT),
                         textAnchor(TEXT_ANCHOR_LEFT),
                         textSize(12f)

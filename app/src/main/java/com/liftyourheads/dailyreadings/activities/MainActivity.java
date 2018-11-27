@@ -2,8 +2,10 @@ package com.liftyourheads.dailyreadings.activities;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
@@ -42,6 +44,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements HomeFragment.OnFragmentInteractionListener,
@@ -62,12 +65,12 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     public static int curDay;
 
     MainViewPagerAdapter adapterViewPager;
-
     public static CustomViewPager mainViewPager;
     BottomNavigationView navigation;
-
     static TabLayout readingsTabs;
     AppBarLayout appBar;
+
+    private Stack<Integer> backStack = new Stack<>(); // Edited
 
     public static HashMap<String,Fragment> fragments = new HashMap<>();
 
@@ -117,23 +120,81 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
 
+
             switch (item.getItemId()) {
                 case R.id.navigation_home:
                     mainViewPager.setCurrentItem(0);
+
+//                    updateBackStack(0);
+
                     return true;
                 case R.id.navigation_reading:
                     mainViewPager.setCurrentItem(1);
+
+//                    updateBackStack(1);
+
                     return true;
                 case R.id.navigation_comments:
                     mainViewPager.setCurrentItem(2);
+
+//                    updateBackStack(2);
+
                     return true;
                 case R.id.navigation_map:
                     mainViewPager.setCurrentItem(3);
+
+//                    updateBackStack(3);
                     return true;
             }
             return false;
         }
     };
+
+    public void updateBackStack(int position) {
+
+        if (backStack.empty())
+            backStack.push(0);
+
+        if (backStack.contains(position)) {
+            backStack.remove(backStack.indexOf(position));
+            backStack.push(position);
+        } else {
+            backStack.push(position);
+        }
+    }
+
+    /*
+    public void setPreferenceListener(){
+
+        SharedPreferences.OnSharedPreferenceChangeListener sharedPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+            @Override
+            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                if (key.equals("translation")){
+
+                    Log.i(TAG,"Translation preference changed! Updating recyclerViews.");
+
+                    for (int i = 0; i < 3; i++) {
+                        reading[i].updateVerses();
+                        ReadingFragment fragment = (ReadingFragment) fragmentManager.findFragmentByTag("Reading");
+                        fragment.setBibleListContent(fragment.getView().findViewById(R.id.reading_fragment_root_id));
+                    }
+                }
+            }
+        };
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener);
+
+    }*/
+
+    @Override
+    public void onBackPressed() {
+        if (backStack.size() > 1) {
+            backStack.pop();
+            mainViewPager.setCurrentItem(backStack.lastElement());
+        } else {
+        }
+    }
 
     public void checkDatabasesExist() {
 
@@ -226,10 +287,12 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
             public void onPageSelected(int position) {
                 navigation.getMenu().getItem(position).setChecked(true);
 
+                updateBackStack(position);
+
                 appBar.setExpanded(false, false);
 
                 if (position == 0) {
-                    readingsTabs.setVisibility(View.GONE);
+                    readingsTabs.setVisibility(View.INVISIBLE);
                     navigation.setVisibility(View.GONE);
                     mainViewPager.getChildAt(position).findViewById(R.id.home_scrollview).setTranslationX(0);
                 } else if (prevPage == 0) {

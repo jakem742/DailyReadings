@@ -14,5 +14,5 @@
     <dimen name="margin_above_home_item">8dp</dimen>
     <dimen name="margin_below_home_item">8dp</dimen>
     <dimen name="map_dot_marker_size">15dp</dimen>
-    <dimen name="map_dot_marker_stroke_size">15dp</dimen>
+    <dimen name="map_dot_marker_stroke_size">3dp</dimen>
 </resources>
