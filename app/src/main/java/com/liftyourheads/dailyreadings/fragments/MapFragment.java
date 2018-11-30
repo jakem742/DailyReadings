@@ -1,6 +1,13 @@
 package com.liftyourheads.dailyreadings.fragments;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.curReading;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.fragmentManager;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.fragments;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.reading;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.eq;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.properties;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.switchCase;
 import static com.mapbox.mapboxsdk.style.layers.Property.ICON_ANCHOR_CENTER;
 import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.Property.TEXT_ANCHOR_LEFT;
@@ -10,6 +17,8 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAnchor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAnchor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
@@ -23,19 +32,20 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textOptional;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textSize;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -43,31 +53,25 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 
-import com.google.gson.JsonObject;
+import com.liftyourheads.dailyreadings.App;
 import com.liftyourheads.dailyreadings.R;
 import com.liftyourheads.dailyreadings.activities.MainActivity;
-import com.liftyourheads.dailyreadings.utils.IconUtils;
-import com.mapbox.android.gestures.Utils;
-import com.mapbox.geojson.BoundingBox;
+import com.liftyourheads.dailyreadings.utils.SymbolGeneratorUtil;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
-import com.mapbox.geojson.GeoJson;
-import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.annotations.Icon;
-import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
-import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -75,28 +79,18 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.plugins.annotation.OnSymbolDragListener;
-import com.mapbox.mapboxsdk.plugins.annotation.Symbol;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
-import com.mapbox.mapboxsdk.style.layers.CircleLayer;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.Property;
-import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-import com.mapbox.mapboxsdk.utils.ColorUtils;
 
-import timber.log.Timber;
-
-
-//// MAPBOX BASED MAP ////
-//Style related imports
 
 
 public class MapFragment extends Fragment implements View.OnTouchListener {
 
-    Marker[] markers;
+    Context mContext;
     MapboxMap map;
     MapView mMapView;
     FrameLayout mapOverlay;
@@ -104,12 +98,21 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
     String TAG = "MapFragment";
     //String JSON_CHARSET = "UTF-8";
     View view;
-    List<SymbolOptions> symbolOptionsList;
-    SymbolManager[] symbolManager;
+    GeoJsonSource[] layers;
 
     private static final String MAKI_ICON_CIRCLE_STROKED = "circle-stroked-15";
     private static final String MAKI_ICON_CIRCLE = "circle-15";
     private static final int ICON_CIRCLE_CUSTOM = R.drawable.map_circle_custom;
+    static String PROPERTY_SELECTED = "selected";
+    static String PROPERTY_VERSES = "verses";
+    static String PROPERTY_TYPE = "type";
+    static String PROPERTY_TITLE = "name";
+    static String LAYER_READING = "reading-places-";
+    static String LAYER_CALLOUTS = "callout-layer-";
+    static String LAYER_LOCATIONS = "locations-";
+
+    FeatureCollection[] featureCollection;
+    public HashMap<String, View> viewMap;
 
     private OnFragmentInteractionListener mListener;
 
@@ -124,6 +127,8 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+        Log.i(TAG,"Creating map fragment");
         super.onCreate(savedInstanceState);
 
     }
@@ -131,8 +136,11 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.i(TAG,"Creating map view");
 
-        if (view == null) {
+        //super.onCreateView(inflater,container,savedInstanceState);
+
+        //if (view == null) {
             Mapbox.getInstance(requireActivity(), getString(R.string.mapbox_access_token));
 
             view = inflater.inflate(R.layout.fragment_map, container, false);
@@ -140,43 +148,117 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
             mMapView = view.findViewById(R.id.bibleMapView);
             mapOverlay = view.findViewById(R.id.mapOverlay);
             mMapView.onCreate(savedInstanceState);
+            viewMap = new HashMap<>();
 
-            mMapView.getMapAsync(new OnMapReadyCallback() {
-                @Override
-                public void onMapReady(MapboxMap mapboxMap) {
+            mMapView.onCreate(savedInstanceState);
 
-                    map = mapboxMap;
-
-
-                    Log.i(TAG, "Map ready. Loading markers");
-
-                    symbolManager = new SymbolManager[3];
-//                    for (int i = 0; i<3; i++) symbolManager[i] = null;
-
-                    //setMarkers(curReading);
-
-                    //zoomCamera();
-
-                    createLayers();
-                    setCurLayer(curReading);
-                    zoomExtents(curReading);
-                    setClickListener();
-
-                    //Todo: fix screen rotate crash
-
-                    ////////// OFFLINE MAP DATA STORAGE /////////
+            getMapAsync(getContext());
 
 
-                    //setSymbolMarkers(curReading);
-                    //zoomCameraSymbols();
-
-
-                }
-            });
-
-        } else { mMapView.onCreate(savedInstanceState); }
+        //} else { mMapView.onCreate(savedInstanceState); }
 
         return view;
+    }
+
+    public void getMapAsync(Context context) {
+
+        mMapView.getMapAsync(new OnMapReadyCallback() {
+
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+
+                Log.i(TAG,"Retrieving map instance");
+                map = mapboxMap;
+
+                for (Integer i=0; i < 3; i++){
+                    map.removeLayer(LAYER_LOCATIONS + i.toString());
+                    map.removeLayer(LAYER_READING + i.toString());
+                    map.removeLayer(LAYER_CALLOUTS + i.toString());
+                }
+
+                Log.i(TAG, "Map ready. Loading markers");
+
+                setupSources();
+                setupIcons();
+                setupReadingLayers();
+                setupCalloutViews();
+
+                setCurrentLayer(curReading);
+                zoomExtents(curReading);
+                setClickListener();
+
+                //Todo: fix screen rotate crash
+
+                ////////// OFFLINE MAP DATA STORAGE /////////
+
+
+                //setSymbolMarkers(curReading);
+                //zoomCameraSymbols();
+
+
+            }
+        });
+
+    }
+
+    public void refreshMap() {
+
+        getMapAsync(getContext());
+
+        //setupSources();
+        //setupIcons();
+        //setupReadingLayers();
+        //setupCalloutViews();
+
+    }
+
+    public void setupCalloutViews(){
+        HashMap<String, Bitmap> imagesMap = new HashMap<>();
+        LayoutInflater inflater = LayoutInflater.from(App.getContext());
+
+        for (int i = 0; i < 3; i++) {
+            for (Feature feature : featureCollection[i].features()) {
+                View view = inflater.inflate(R.layout.layout_info_window, null);
+
+                String name = feature.getStringProperty(PROPERTY_TITLE);
+                TextView titleTv = view.findViewById(R.id.title);
+                titleTv.setText(name);
+
+                String type = feature.getStringProperty(PROPERTY_TYPE);
+                TextView styleTv = view.findViewById(R.id.type);
+                styleTv.setText(type);
+
+                String verses = feature.getStringProperty(PROPERTY_VERSES);
+                TextView versesTv = view.findViewById(R.id.verses);
+                versesTv.setText(verses);
+
+                //boolean favourite = feature.getBooleanProperty(PROPERTY_FAVOURITE);
+                //ImageView imageView = (ImageView) view.findViewById(R.id.logoView);
+                //imageView.setImageResource(favourite ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
+
+                Bitmap bitmap = SymbolGeneratorUtil.generate(view);
+                imagesMap.put(name, bitmap);
+                viewMap.put(name, view);
+            }
+        }
+
+        Log.i("MapFragment","Finished creating callout views");
+
+        setImageGenResults(viewMap, imagesMap);
+
+        for (Integer i = 0; i < 3; i++) {
+            SymbolLayer[] calloutLayer = new SymbolLayer[3];
+            calloutLayer[i] = new SymbolLayer(LAYER_CALLOUTS + i.toString(), LAYER_READING + i.toString());
+            map.addLayer(calloutLayer[i]
+                    .withProperties(
+                            iconImage("{name}"),
+                            iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT),
+                            iconOffset(new Float[]{-20.0f, -10.0f}))
+                    .withFilter(eq(get(PROPERTY_SELECTED), literal(true))));
+        }
+
+            refreshSource();
+
     }
 
     public void setClickListener(){
@@ -187,55 +269,172 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 PointF screenPoint = map.getProjection().toScreenLocation(point);
                 List<Feature> features = map.queryRenderedFeatures(screenPoint, "locations-0","locations-1","locations-2");
                 if (!features.isEmpty()) {
-                    StringBuilder names = new StringBuilder();
-                    for (Feature feature : features) {
-                         names.append(feature.getStringProperty("name")).append(", ");
-                    }
-                    //Feature selectedFeature = features.get(0);
-                    //String title = selectedFeature.getStringProperty("Name");
-                    Toast.makeText(getContext(), "You selected " + names, Toast.LENGTH_SHORT).show();
+                    handleClickIcon(screenPoint);
+                    //Feature feature = features.get(0);
+                    //PointF symbolScreenPoint = map.getProjection().toScreenLocation(convertToLatLng(feature));
+                    //handleClickCallout(feature, screenPoint, symbolScreenPoint);
+                } else {
+                    deselectAll();
+                    refreshSource();
                 }
+
             }
         });
     }
 
-    public void createLayers() {
+    private LatLng convertToLatLng(Feature feature) {
+        Point symbolPoint = (Point) feature.geometry();
+        return new LatLng(symbolPoint.latitude(), symbolPoint.longitude());
+    }
 
-        SymbolLayer[] symbolLayers = new SymbolLayer [3];
-        GeoJsonSource[] layers = new GeoJsonSource[3];
+    private void handleClickIcon(PointF screenPoint) {
+        List<Feature> features = map.queryRenderedFeatures(screenPoint, "locations-0","locations-1","locations-2");
+        if (!features.isEmpty()) {
+            String title = features.get(0).getStringProperty(PROPERTY_TITLE);
+            List<Feature> featureList = featureCollection[curReading].features();
+            for (int i = 0; i < featureList.size(); i++) {
+                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(title)) {
+                    setSelected(i);
+                }
+            }
+        }
+    }
 
+    private void setSelected(int index) {
+
+        deselectAll();
+
+        Feature feature = featureCollection[curReading].features().get(index);
+        selectFeature(feature);
+        //animateCameraToSelection(feature);
+        refreshSource();
+
+    }
+
+    private void refreshSource() {
+        if (layers[curReading] != null && featureCollection[curReading] != null) {
+            layers[curReading].setGeoJson(featureCollection[curReading]);
+        }
+    }
+
+    /**
+     * Deselects the state of all the features
+     */
+    private void deselectAll() {
+        for (Feature feature : featureCollection[curReading].features()) {
+            feature.addBooleanProperty(PROPERTY_SELECTED,false);
+        }
+    }
+
+    private void selectFeature(Feature feature) {
+        feature.addBooleanProperty(PROPERTY_SELECTED, true);
+    }
+
+    private void handleClickCallout(Feature feature, PointF screenPoint, PointF symbolScreenPoint) {
+        View view = viewMap.get(feature.getStringProperty(PROPERTY_TITLE));
+        //View textContainer = view.findViewById(R.id.text_container);
+
+        // create hitbox for textView
+        Rect hitRectText = new Rect();
+        //textContainer.getHitRect(hitRectText);
+
+        // move hitbox to location of symbol
+        hitRectText.offset((int) symbolScreenPoint.x, (int) symbolScreenPoint.y);
+
+        // offset vertically to match anchor behaviour
+        hitRectText.offset(0, -view.getMeasuredHeight());
+
+        // hit test if clicked point is in textview hitbox
+        if (hitRectText.contains((int) screenPoint.x, (int) screenPoint.y)) {
+            // user clicked on text
+            String callout = feature.getStringProperty("verses");
+            Toast.makeText(getActivity(), callout, Toast.LENGTH_LONG).show();
+        } else {
+            // user clicked on icon
+            List<Feature> featureList = featureCollection[curReading].features();
+            for (int i = 0; i < featureList.size(); i++) {
+                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(feature.getStringProperty(PROPERTY_TITLE))) {
+                    //toggleFavourite(i);
+                }
+            }
+        }
+    }
+
+
+    public void setImageGenResults(HashMap<String, View> viewMap, HashMap<String, Bitmap> imageMap) {
+        if (map != null) {
+            // calling addImages is faster as separate addImage calls for each bitmap.
+            map.addImages(imageMap);
+        }
+        // need to store reference to views to be able to use them as hitboxes for click events.
+        this.viewMap = viewMap;
+    }
+
+    private Feature getSelectedFeature() {
+        if (featureCollection[curReading] != null) {
+            for (Feature feature : featureCollection[curReading].features()) {
+                if (feature.getBooleanProperty(PROPERTY_SELECTED)) {
+                    return feature;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public void setupSources(){
+        layers = new GeoJsonSource[3];
         String readingSourceString;
+        featureCollection = new FeatureCollection[3];
+
+        for (Integer i = 0; i < 3; i++) {
+                readingSourceString = reading[i].getPlacesAsString();
+                featureCollection[i] = FeatureCollection.fromJson(readingSourceString);
+                layers[i] = new GeoJsonSource(LAYER_READING + i.toString(),featureCollection[i]);
+                map.addSource(layers[i]);
+        }
+
+    }
+
+    public void setupIcons() {
 
         //IconFactory iconFactory = IconFactory.getInstance(getContext());
         //Icon icon = iconFactory.fromResource(ICON_CIRCLE_CUSTOM);
-        Bitmap custom_icon = drawableToBitmap(getResources().getDrawable(R.drawable.map_circle_custom));
+        Bitmap custom_icon = drawableToBitmap(App.getContext().getResources().getDrawable(R.drawable.map_circle_custom));
 
         //Icon icon = IconUtils.drawableToIcon(getContext(),R.drawable.map_circle_custom,255,"marker");
 
-        Bitmap icon = BitmapFactory.decodeResource(getActivity().getResources(),R.drawable.map_circle_custom);
+        //Bitmap icon = BitmapFactory.decodeResource(getActivity().getResources(),R.drawable.map_circle_custom);
+        if (map != null) map.addImage("icon_circle_custom",custom_icon);
 
-        map.addImage("icon_circle_custom",custom_icon);
+    }
 
-        for (Integer i = 0; i < 3; i++) {
+    public void setupReadingLayers() {
 
-            //if (reading[i].placesExist()) {
-                Log.i(TAG,"Iterating to layer " + i.toString());
-                readingSourceString = reading[i].getPlacesAsString();
+        SymbolLayer[] symbolLayers = new SymbolLayer [3];
 
-                layers[i] = new GeoJsonSource("reading-places-" + i.toString(), FeatureCollection.fromJson(readingSourceString));
-                map.addSource(layers[i]);
-                symbolLayers[i] = new SymbolLayer("locations-" + i.toString(), "reading-places-" + i.toString());
+        if (map != null) {
+            for (Integer i = 0; i < 3; i++) {
+
+                Log.i(TAG, "Iterating to layer " + i.toString());
+
+                map.removeLayer(LAYER_LOCATIONS + i.toString()); //Clear existing layers as needed
+
+                symbolLayers[i] = new SymbolLayer(LAYER_LOCATIONS + i.toString(), LAYER_READING + i.toString());
                 symbolLayers[i].setProperties(
                         visibility(VISIBLE),
                         iconImage("icon_circle_custom"),
                         iconAllowOverlap(true),
+                        iconAnchor(ICON_ANCHOR_CENTER),
+                        iconSize(switchCase(
+                                get(PROPERTY_SELECTED),
+                                literal(1.5f),
+                                literal(1.0f))),
                         textAllowOverlap(false),
                         textOptional(true),
                         textField("{name}"),
                         textOffset(new Float[]{1f, 0f}),
-                        iconAnchor(ICON_ANCHOR_CENTER),
-                        iconColor(Color.RED),
-                        textColor(getContext().getResources().getColor(R.color.colorDark)),
+                        textColor(App.getContext().getResources().getColor(R.color.colorDark)),
                         textHaloColor(Color.LTGRAY),
                         textHaloBlur(1.5f),
                         textHaloWidth(1f),
@@ -244,142 +443,54 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                         textSize(12f)
                 );
                 map.addLayer(symbolLayers[i]);
-            //}
 
+            }
         }
 
 
     }
 
-    public void setCurLayer(int readingNum) {
+    public void setCurrentLayer(int readingNum) {
 
-        Layer curLayer = map.getLayer("locations-" + Integer.toString(readingNum));
+        if (map != null) {
+            Layer curLayer = map.getLayer(LAYER_LOCATIONS + Integer.toString(readingNum));
 
-        curLayer.setProperties(visibility(VISIBLE));
+            curLayer.setProperties(visibility(VISIBLE));
 
-        Layer[] layers = new Layer[3];
+            Layer[] layers = new Layer[3];
 
-        for (Integer i = 0; i < 3; i++) {
+            for (Integer i = 0; i < 3; i++) {
 
-            layers[i] = map.getLayer("locations-" + i.toString());
-
-        }
-
-        switch (readingNum) {
-            case 0:
-                map.getLayer("locations-1").setProperties(visibility(NONE));
-                map.getLayer("locations-2").setProperties(visibility(NONE));
-                break;
-            case 1:
-                map.getLayer("locations-0").setProperties(visibility(NONE));
-                map.getLayer("locations-2").setProperties(visibility(NONE));
-                break;
-            case 2:
-                map.getLayer("locations-0").setProperties(visibility(NONE));
-                map.getLayer("locations-1").setProperties(visibility(NONE));
-                break;
-        }
-
-    }
-
-    /*
-    public void setSymbolMarkers(int readingNumber) {
-        Log.i(TAG, "Setting map markers");
-        map.clear();
-
-        if (symbolManager[readingNumber] == null) {
-            symbolManager[readingNumber] = new SymbolManager(mMapView, map);
-
-
-            List<String[]> places = reading[readingNumber].getPlaces();
-
-            // SYMBOL MANAGER //
-            // create symbol manager object
-
-            // add click listeners if desired
-            symbolManager[readingNumber].addClickListener(symbol -> Toast.makeText(getContext(),
-                    String.format("Symbol clicked %s", symbol.getTextField()),
-                    Toast.LENGTH_SHORT).show());
-
-            symbolManager[readingNumber].addLongClickListener(symbol ->
-                    Toast.makeText(getContext(),
-                            String.format("Symbol long clicked %s", symbol.getTextField()),
-                            Toast.LENGTH_SHORT
-                    ).show());
-
-            // set non-data-driven properties, such as:
-            symbolManager[readingNumber].setIconAllowOverlap(true);
-            //symbolManager.setIconTranslate(new Float[]{-4f,5f});
-            symbolManager[readingNumber].setIconRotationAlignment(ICON_ROTATION_ALIGNMENT_VIEWPORT);
-            symbolManager[readingNumber].setTextAllowOverlap(true);
-            symbolManager[readingNumber].setTextRotationAlignment(ICON_ROTATION_ALIGNMENT_VIEWPORT);
-            symbolManager[readingNumber].setTextTranslateAnchor(TEXT_ANCHOR_RIGHT);
-            symbolManager[readingNumber].setTextTranslate(new Float[]{2.5f, 0f});
-
-            symbolOptionsList = new ArrayList<>();
-            locations = new ArrayList<>();
-
-            for (String[] place : places) {
-
-                Double latitude = Double.parseDouble(place[1].replaceAll("[^\\d.]", ""));
-                Double longitude = Double.parseDouble(place[2].replaceAll("[^\\d.]", ""));
-                LatLng mLatLng = new LatLng(latitude, longitude);
-                locations.add(mLatLng);
-                symbolOptionsList.add(new SymbolOptions()
-
-                        .withLatLng(mLatLng)
-                        .withIconImage(MAKI_ICON_CIRCLE)
-                        .withTextField(place[0])
-                        //.withTextAnchor("right")
-                        .withTextOffset(new Float[]{1f, 0f})
-                        .withIconAnchor(ICON_ANCHOR_CENTER)
-                        .withIconColor(ColorUtils.colorToRgbaString(Color.RED))
-                        .withTextJustify(TEXT_JUSTIFY_LEFT)
-                        .withTextAnchor(TEXT_ANCHOR_LEFT)
-                        .withTextSize(10f));
+                layers[i] = map.getLayer(LAYER_LOCATIONS + i.toString());
 
             }
 
-            symbolManager[readingNumber].create(symbolOptionsList);
-        }
-
-    }
-    */
-
-    public void setMarkers(int readingNumber) {
-        List<String[]> places = reading[readingNumber].getPlaces();
-        int tagNumber = 0;
-        markers = new Marker[places.size()];
-
-        map.clear();
-
-        //IconFactory iconFactory = IconFactory.getInstance(getContext());
-        //Icon icon = iconFactory.fromResource(R.drawable.map_circle_custom);
-
-        //Icon icon = IconUtils.drawableToIcon(getContext(),R.drawable.map_circle_custom,255,"marker");
-
-        // Add some markers to the map, and add a data object to each marker.
-
-        for( String[] place : places) {
-
-            Double latitude = Double.parseDouble(place[1].replaceAll("[^\\d.]", ""));
-            Double longitude = Double.parseDouble(place[2].replaceAll("[^\\d.]", ""));
-            LatLng mLatLng = new LatLng(latitude, longitude);
-
-            markers[tagNumber] = map.addMarker(new MarkerOptions()
-                    .setPosition(mLatLng)
-                    .setTitle(place[0]));
-                    //.setIcon(icon));
+            switch (readingNum) {
+                case 0:
+                    map.getLayer("locations-1").setProperties(visibility(NONE));
+                    map.getLayer("locations-2").setProperties(visibility(NONE));
+                    break;
+                case 1:
+                    map.getLayer("locations-0").setProperties(visibility(NONE));
+                    map.getLayer("locations-2").setProperties(visibility(NONE));
+                    break;
+                case 2:
+                    map.getLayer("locations-0").setProperties(visibility(NONE));
+                    map.getLayer("locations-1").setProperties(visibility(NONE));
+                    break;
+            }
+        } else {
 
 
-            markers[tagNumber].setId(tagNumber++);
+            Log.i(TAG,"Unable to find map reference!");
+
         }
 
     }
 
     public Bitmap drawableToBitmap (Drawable drawable) {
         Bitmap bitmap;
-        int px = getResources().getDimensionPixelSize(R.dimen.map_dot_marker_size);
+        int px = App.getContext().getResources().getDimensionPixelSize(R.dimen.map_dot_marker_size);
 
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
@@ -406,182 +517,73 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
         CameraUpdate cu;
 
         locations = new ArrayList<>();
-        List<String[]> places = reading[readingNumber].getPlaces();
+        List<Map<String,String>> places = reading[readingNumber].getPlaces();
 
 
-        for (String[] place : places) {
+        for (Map<String,String> place : places) {
 
-            Double latitude = Double.parseDouble(place[1].replaceAll("[^\\d.]", ""));
-            Double longitude = Double.parseDouble(place[2].replaceAll("[^\\d.]", ""));
+            Double latitude = Double.parseDouble(place.get("latitude"));
+            Double longitude = Double.parseDouble(place.get("longitude"));
             locations.add( new LatLng(latitude, longitude));
 
         }
 
         int numPlaces = locations.size();
 
-        if ( numPlaces > 0 ) { //Check if markers do exist for this reading
+        if (map != null) {
 
-            mapOverlay.setVisibility(View.INVISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(true);
+            if (numPlaces > 0) { //Check if markers do exist for this reading
 
-            if (numPlaces < 2) { //If there's only one point, zoom in to a reasonable distance
+                mapOverlay.setVisibility(View.INVISIBLE);
+                map.getUiSettings().setAllGesturesEnabled(true);
 
-                cu = CameraUpdateFactory.newLatLngZoom(locations.get(0), 6F);
+                if (numPlaces < 2) { //If there's only one point, zoom in to a reasonable distance
 
-            } else { //Automatically zoom out to fit all points
+                    cu = CameraUpdateFactory.newLatLngZoom(locations.get(0), 6F);
 
-                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                } else { //Automatically zoom out to fit all points
 
-                for (LatLng location : locations) {
-                    try {
-                        builder.include(location);
-                    } catch (Exception e) {
-                        //Log.i("Marker Info", "Failed to process marker " + marker.getTitle());
-                        e.printStackTrace();
+                    LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+                    for (LatLng location : locations) {
+                        try {
+                            builder.include(location);
+                        } catch (Exception e) {
+                            //Log.i("Marker Info", "Failed to process marker " + marker.getTitle());
+                            e.printStackTrace();
+
+                        }
+                    }
+
+                    LatLngBounds bounds = builder.build();
+
+                    // Calculate distance between northeast and southwest
+                    float[] results = new float[1];
+                    android.location.Location.distanceBetween(bounds.getNorthEast().getLatitude(), bounds.getNorthEast().getLongitude(),
+                            bounds.getSouthWest().getLatitude(), bounds.getSouthWest().getLongitude(), results);
+
+                    if (results[0] < 3000) { // distance is less than 1 km -> set to zoom level 8
+                        cu = CameraUpdateFactory.newLatLngZoom(bounds.getCenter(), 8F);
+                    } else {
+                        int padding = 200; // offset from edges of the map in pixels
+                        cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
 
                     }
                 }
 
-                LatLngBounds bounds = builder.build();
 
-                // Calculate distance between northeast and southwest
-                float[] results = new float[1];
-                android.location.Location.distanceBetween(bounds.getNorthEast().getLatitude(), bounds.getNorthEast().getLongitude(),
-                        bounds.getSouthWest().getLatitude(), bounds.getSouthWest().getLongitude(), results);
-
-                if (results[0] < 3000) { // distance is less than 1 km -> set to zoom level 8
-                    cu = CameraUpdateFactory.newLatLngZoom(bounds.getCenter(), 8F);
-                } else {
-                    int padding = 200; // offset from edges of the map in pixels
-                    cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-
-                }
+            } else {
+                //There aren't any points to see! Grey out the map area
+                cu = CameraUpdateFactory.newLatLngZoom(new LatLng(33.813, 33.781), 4F);
+                mapOverlay.setVisibility(View.VISIBLE);
+                map.getUiSettings().setAllGesturesEnabled(false);
             }
 
+            map.animateCamera(cu, 1500);
 
-        } else {
-            //There aren't any points to see! Grey out the map area
-            cu = CameraUpdateFactory.newLatLngZoom(new LatLng(33.813,33.781), 4F);
-            mapOverlay.setVisibility(View.VISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(false);
         }
 
-        map.animateCamera(cu,1500);
-
     }
-
-    public void zoomCameraMarkers() {
-
-        //Zoom to fit markers
-        CameraUpdate cu;
-
-        if ( markers.length > 0 ) { //Check if markers do exist for this reading
-
-            mapOverlay.setVisibility(View.INVISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(true);
-
-            if (markers.length < 2) { //If there's only one point, zoom in to a reasonable distance
-                cu = CameraUpdateFactory.newLatLngZoom(markers[0].getPosition(), 6F);
-
-            } else { //Automatically zoom out to fit all points
-
-                LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-                for (Marker marker : markers) {
-                    try {
-                        builder.include(marker.getPosition());
-                    } catch (Exception e) {
-                        //Log.i("Marker Info", "Failed to process marker " + marker.getTitle());
-                        e.printStackTrace();
-
-                    }
-                }
-
-                LatLngBounds bounds = builder.build();
-
-                // Calculate distance between northeast and southwest
-                float[] results = new float[1];
-                android.location.Location.distanceBetween(bounds.getNorthEast().getLatitude(), bounds.getNorthEast().getLongitude(),
-                        bounds.getSouthWest().getLatitude(), bounds.getSouthWest().getLongitude(), results);
-
-                if (results[0] < 3000) { // distance is less than 1 km -> set to zoom level 8
-                    cu = CameraUpdateFactory.newLatLngZoom(bounds.getCenter(), 8F);
-                } else {
-                    int padding = 200; // offset from edges of the map in pixels
-                    cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-
-                }
-            }
-
-
-        } else {
-            //There aren't any points to see! Grey out the map area
-            cu = CameraUpdateFactory.newLatLngZoom(new LatLng(33.813,33.781), 4F);
-            mapOverlay.setVisibility(View.VISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(false);
-        }
-
-        map.animateCamera(cu,1500);
-
-    }
-
-
-    public void zoomCameraSymbols() {
-
-        //Zoom to fit markers
-        CameraUpdate cu;
-
-        if ( locations.size() > 0 ) { //Check if markers do exist for this reading
-
-            mapOverlay.setVisibility(View.INVISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(true);
-
-            if (locations.size() < 2) { //If there's only one point, zoom in to a reasonable distance
-
-                cu = CameraUpdateFactory.newLatLngZoom(locations.get(0), 6F);
-
-            } else { //Automatically zoom out to fit all points
-
-                LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-                for (LatLng location : locations) {
-                    try {
-                        builder.include(location);
-                    } catch (Exception e) {
-                        //Log.i("Marker Info", "Failed to process marker " + marker.getTitle());
-                        e.printStackTrace();
-
-                    }
-                }
-
-                LatLngBounds bounds = builder.build();
-
-                // Calculate distance between northeast and southwest
-                float[] results = new float[1];
-                android.location.Location.distanceBetween(bounds.getNorthEast().getLatitude(), bounds.getNorthEast().getLongitude(),
-                        bounds.getSouthWest().getLatitude(), bounds.getSouthWest().getLongitude(), results);
-
-                if (results[0] < 3000) { // distance is less than 1 km -> set to zoom level 8
-                    cu = CameraUpdateFactory.newLatLngZoom(bounds.getCenter(), 8F);
-                } else {
-                    int padding = 200; // offset from edges of the map in pixels
-                    cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
-
-                }
-            }
-
-
-        } else {
-            //There aren't any points to see! Grey out the map area
-            cu = CameraUpdateFactory.newLatLngZoom(new LatLng(33.813,33.781), 4F);
-            mapOverlay.setVisibility(View.VISIBLE);
-            map.getUiSettings().setAllGesturesEnabled(false);
-        }
-
-        map.animateCamera(cu,1500);
-
-    }
-
 
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -593,7 +595,9 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     @Override
     public void onAttach(Context context) {
+        Log.i(TAG,"Attaching Map");
         super.onAttach(context);
+        mContext = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
@@ -646,7 +650,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     @Override
     public void onPause() {
-        Log.i(TAG,"Pausing Map");
         super.onPause();
         mMapView.onPause();
     }
@@ -664,11 +667,15 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
         mMapView.onLowMemory();
     }
 
+    /*
     @Override
     public void onDestroy() {
+        Log.i(TAG,"Destroying Map");
         super.onDestroy();
         //mMapView.onDestroy();
     }
+    */
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -678,7 +685,14 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        mMapView.onSaveInstanceState(outState);
+        //mMapView.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState){
+        super.onActivityCreated(savedInstanceState);
+        mMapView.onCreate(savedInstanceState);
+
     }
 
     /*

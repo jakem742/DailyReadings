@@ -4,8 +4,10 @@
     <color name="colorPrimaryDark">#889f6c</color>
     <color name="colorAccent">#657650</color>
     <color name="colourBodyText">#D81B60</color>
+    <color name="colourBodyTextLight">#FFFAFAFA</color>
     <color name="colourBodyTextNight">#b0bec5</color>
     <color name="colourRefText">#b71c1c</color>
+    <color name="colourRefMapText">#be4848</color>
 
     <!-- OLD APP COLOURS-->
     <color name="colorDark">#c6212121</color>

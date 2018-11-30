@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Daily Readings</string>
+    <string name="app_name">Bible Reading Companion</string>
     <string name="title_home">Home</string>
     <string name="title_reading">Reading</string>
     <string name="title_comments">Comments</string>

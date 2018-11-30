@@ -1,5 +1,7 @@
 package com.liftyourheads.dailyreadings.activities;
 
+import android.app.Activity;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,6 +10,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
@@ -22,7 +25,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.DatePicker;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.liftyourheads.dailyreadings.R;
@@ -38,11 +43,13 @@ import com.liftyourheads.dailyreadings.utils.CustomViewPager;
 import com.liftyourheads.dailyreadings.utils.DataBaseHelper;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -56,25 +63,37 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     public static final String[] MONTHS = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
     public static final String[] TRANSLATIONS = {"KJV", "ESV", "NET"};
 
-    private final String TAG = "Main Activity";
+    public static final String TAG = "Main Activity";
 
     public static Readings[] reading = new Readings[3];
     public static Integer curReading = 0;
-    private Integer prevPage = 0;
+    private static Integer prevPage = 0;
+
     public static int curMonth;
     public static int curDay;
+    public static int selectedMonth = 0;
+    public static int selectedDay = 0;
 
-    MainViewPagerAdapter adapterViewPager;
+    static MapFragment mapFragment;
+
+    static MainViewPagerAdapter adapterViewPager;
     public static CustomViewPager mainViewPager;
-    BottomNavigationView navigation;
-    static TabLayout readingsTabs;
+    public BottomNavigationView navigation;
+    public TabLayout readingsTabs;
     AppBarLayout appBar;
 
-    private Stack<Integer> backStack = new Stack<>(); // Edited
+    private static Stack<Integer> backStack = new Stack<>(); // Edited
 
     public static HashMap<String,Fragment> fragments = new HashMap<>();
 
     public static FragmentManager fragmentManager;
+
+    // The key for saving and retrieving isActivityRecreated field.
+    private static final String KEY_IS_ACTIVITY_RECREATED = "KEY_IS_ACTIVITY_RECREATED";
+
+    /** true if this activity is recreated. */
+    private static boolean isActivityRecreated = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +109,17 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         fragmentManager = getSupportFragmentManager();
         mainViewPager.setOffscreenPageLimit(3);
 
+        try {
+            isActivityRecreated = savedInstanceState.getBoolean(KEY_IS_ACTIVITY_RECREATED, false);
+        } catch (NullPointerException e) {
+            Log.i(TAG,"Activity is not recreated!");
+        }
+
+        if (isActivityRecreated) {
+            selectedMonth = savedInstanceState.getInt("month");
+            selectedDay = savedInstanceState.getInt("day");
+
+        }
 
         //Determine the current date
         getCurrentDate();
@@ -98,16 +128,22 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         checkDatabasesExist();
 
         //Get readings info
-        initialiseReadings(curDay,curMonth);
+        initialiseReadings(this);
 
         //Create the fragments for use later on
         generateReadingFragments();
 
         //Set up the viewpager listener
-        initialiseMainViewPager();
+        initialiseMainViewPager(this);
 
         //Set tab values
-        initialiseTabs();
+        initialiseTabs(readingsTabs);
+
+        if(isActivityRecreated){
+            //MapFragment mapFragment = ((MapFragment)fragments.get("Map"));
+            //mapFragment.getMapAsync();
+            //mapFragment.refreshMap();
+        }
 
         //Hide nav bar on home page
         navigation.setVisibility(View.GONE);
@@ -150,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         }
     };
 
-    public void updateBackStack(int position) {
+    public static void updateBackStack(int position) {
 
         if (backStack.empty())
             backStack.push(0);
@@ -162,30 +198,6 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
             backStack.push(position);
         }
     }
-
-    /*
-    public void setPreferenceListener(){
-
-        SharedPreferences.OnSharedPreferenceChangeListener sharedPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                if (key.equals("translation")){
-
-                    Log.i(TAG,"Translation preference changed! Updating recyclerViews.");
-
-                    for (int i = 0; i < 3; i++) {
-                        reading[i].updateVerses();
-                        ReadingFragment fragment = (ReadingFragment) fragmentManager.findFragmentByTag("Reading");
-                        fragment.setBibleListContent(fragment.getView().findViewById(R.id.reading_fragment_root_id));
-                    }
-                }
-            }
-        };
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener);
-
-    }*/
 
     @Override
     public void onBackPressed() {
@@ -226,29 +238,31 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     }
 
-    public void initialiseReadings(int day, int month) {
+
+
+    public static void initialiseReadings(Context context) {
 
         //Initialise each reading
 
         for (int i = 0; i < 3; i++) {
-            reading[i] = new Readings(this,i,day,month);
+            reading[i] = new Readings(context,i,curDay,curMonth);
         }
 
         //Check if leap year - return message if so
-        if (reading[0].isLeapDay()) Toast.makeText(getApplicationContext(), "There aren't any readings set as this is a leap day!", Toast.LENGTH_LONG).show();
+        if (reading[0].isLeapDay()) Toast.makeText(context.getApplicationContext(), "There aren't any readings set as this is a leap day!", Toast.LENGTH_LONG).show();
 
     }
 
-    public void initialiseTabs() {
+    public static void initialiseTabs(TabLayout tabs) {
 
         //Initialise the reading tabs
         for (int i = 0; i < 3; i++) {
-            if ( reading[i].getFullName() != null && readingsTabs.getTabAt(i) != null ) {
-                readingsTabs.getTabAt(i).setText(reading[i].getFullName());
+            if ( reading[i].getFullName() != null && tabs.getTabAt(i) != null ) {
+                tabs.getTabAt(i).setText(reading[i].getFullName());
             }
         }
 
-        readingsTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
 
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -272,11 +286,64 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     }
 
-    public void initialiseMainViewPager() {
+    //public static void updateReadings(Context context,int monthOfYear, int dayOfMonth){
+
+
+
+        //TabLayout tabs = ((MainActivity)context).findViewById(R.id.reading_tab_layout);
+
+
+        //((MainActivity)context).recreate();
+
+        //Get readings info
+        //initialiseReadings(context,dayOfMonth,monthOfYear);
+
+        //Create the fragments for use later on
+        //generateReadingFragments();
+
+        //mainViewPager.removeAllViews();
+
+        //Set up the viewpager listener
+        //initialiseMainViewPager(context);
+
+        //Set tab values
+        //initialiseTabs(tabs);
+
+    //}
+
+    // Call this method when you want to recreate this activity.
+    public static void recreateActivity(Activity activity,int month,int day) {
+        selectedMonth = month;
+        selectedDay = day;
+        isActivityRecreated = true;
+        activity.recreate();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_IS_ACTIVITY_RECREATED, isActivityRecreated);
+        outState.putInt("month", selectedMonth);
+        outState.putInt("day", selectedDay);
+        outState.putInt("mapFragmentID",mapFragment.getId());
+    }
+
+    public static void initialiseMainViewPager(Context context) {
+
+        BottomNavigationView navBar = ((MainActivity) context).findViewById(R.id.navigation);
+        AppBarLayout topBar = ((MainActivity) context).findViewById(R.id.main_appbar);
+        TabLayout tabs = ((MainActivity)context).findViewById(R.id.reading_tab_layout);
 
         //Initialise the viewpager
-        adapterViewPager = new MainViewPagerAdapter(getSupportFragmentManager());
+        adapterViewPager = new MainViewPagerAdapter(fragmentManager);
         mainViewPager.storeAdapter(adapterViewPager);
+
+        adapterViewPager.startUpdate(mainViewPager);
+        HomeFragment homeFragment = (HomeFragment) adapterViewPager.instantiateItem(mainViewPager,0);
+        ReadingRootFragment readingRootFragment = (ReadingRootFragment) adapterViewPager.instantiateItem(mainViewPager,1);
+        CommentsRootFragment commentsRootFragment = (CommentsRootFragment) adapterViewPager.instantiateItem(mainViewPager,2);
+        mapFragment = (MapFragment) adapterViewPager.instantiateItem(mainViewPager,3);
+        adapterViewPager.finishUpdate(mainViewPager);
 
         mainViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
@@ -285,21 +352,20 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
             @Override
             public void onPageSelected(int position) {
-                navigation.getMenu().getItem(position).setChecked(true);
-
+                navBar.getMenu().getItem(position).setChecked(true);
                 updateBackStack(position);
 
-                appBar.setExpanded(false, false);
+                topBar.setExpanded(false, false);
 
                 if (position == 0) {
-                    readingsTabs.setVisibility(View.INVISIBLE);
-                    navigation.setVisibility(View.GONE);
+                    tabs.setVisibility(View.INVISIBLE);
+                    navBar.setVisibility(View.GONE);
                     mainViewPager.getChildAt(position).findViewById(R.id.home_scrollview).setTranslationX(0);
                 } else if (prevPage == 0) {
-                    readingsTabs.setVisibility(View.VISIBLE);
-                    navigation.setVisibility(View.VISIBLE);
+                    tabs.setVisibility(View.VISIBLE);
+                    navBar.setVisibility(View.VISIBLE);
                 } else if ( position == 3) {
-                    appBar.setExpanded(true,true);
+                    topBar.setExpanded(true,true);
                 }
 
                 prevPage = position;
@@ -317,11 +383,20 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
         //// GET CURRENT DATE INFO ////
 
-        GregorianCalendar cal = new GregorianCalendar(TimeZone.getDefault());
+        if (isActivityRecreated){
+            //retrieve the stored date
 
-        curMonth = cal.get(Calendar.MONTH);
-        curDay = cal.get(Calendar.DAY_OF_MONTH);
+            curMonth = selectedMonth;
+            curDay = selectedDay;
 
+        } else {
+            //Get today's date
+
+            GregorianCalendar cal = new GregorianCalendar(TimeZone.getDefault());
+
+            curMonth = cal.get(Calendar.MONTH);
+            curDay = cal.get(Calendar.DAY_OF_MONTH);
+        }
     }
 
     @Override
@@ -331,9 +406,11 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
         Log.i("On RecyclerView Clicked","Selected reading " + Integer.toString(position));
 
+        TabLayout tabs = ((MainActivity)view.getContext()).findViewById(R.id.reading_tab_layout);
+
         //updateReadingNum(position);
         mainViewPager.setCurrentItem(1);
-        readingsTabs.getTabAt(position).select();
+        tabs.getTabAt(position).select();
 
 
     }
@@ -368,7 +445,9 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
                     return CommentsRootFragment.newInstance();
                 case 3:
                     Log.i(TAG,"Getting map fragment");
+                    //MapFragment mapFragment = (MapFragment) fragmentManager.findFragmentByTag("Map");
                     return fragments.get("Map");
+                    //return fragments.get("Map");
                 default:
                     return null;
             }
@@ -386,21 +465,24 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     public static void updateReadingNum(int readingNumber) {
 
-        String TAG = "Main Activity";
+        Log.i(TAG,"Updating reading fragments to reading " + Integer.toString(readingNumber) + ", Num Fragments = " + fragmentManager.getFragments().size());
+        Log.i(TAG,fragmentManager.getFragments().toString());
 
         if (curReading != readingNumber) {
             curReading = readingNumber;
 
-            Log.i(TAG,"Updating reading to " + Integer.toString(curReading));
             FragmentTransaction trans = fragmentManager.beginTransaction();
 
             trans.replace(R.id.root_frame_reading, fragments.get("Reading " + Integer.toString(curReading)));
             trans.replace(R.id.root_frame_comments,fragments.get("Comments " + Integer.toString(curReading)));
-
             //if(getSupportFragmentManager().findFragmentById(R.id.bibleMapView) != null) {
-                MapFragment mapFragment = (MapFragment) fragments.get("Map");
-                mapFragment.setCurLayer(curReading);
-                mapFragment.zoomExtents(curReading);
+
+            //MapFragment mapFragment = (MapFragment) fragmentManager.findFragmentByTag("Map");
+            //MapFragment mapFragment = (MapFragment)fragmentManager.findFragmentById(R.id.map_fragment_root_id);
+            //Log.i(TAG,"Map fragment: " + mapFragment);
+            //if (isActivityRecreated && !mapRecreated) mapFragment.refreshMap(); mapRecreated = true;
+            mapFragment.setCurrentLayer(curReading);
+            mapFragment.zoomExtents(curReading);
             //} else Log.i(TAG,"No map fragment to replace!");
 
             trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
@@ -410,21 +492,42 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     }
 
-    public void generateReadingFragments() {
 
-        Log.i(TAG,"Storing Fragments");
+    public static void generateReadingFragments() {
+
+
+        //fragmentManager.getFragments().clear();
+        //fragments = new HashMap<>();
+        if (isActivityRecreated) {
+            backStack.empty();
+            //fragments.remove("Map");
+            //fragmentManager.beginTransaction().remove(fragmentManager.findFragmentById(R.id.map_fragment_root_id)).commitAllowingStateLoss();
+        } Log.i(TAG,"Destroying existing map fragment");
+
+        //if(isActivityRecreated){
+
+            //fragmentManager.beginTransaction().replace("Map",MapFragment.newInstance());
+
+        //} else {
 
         for (int i = 0; i < 3; i++) {
-            Log.i(TAG,"Processing number " + Integer.toString(i));
-
             fragments.put("Reading " + Integer.toString(i), ReadingFragment.newInstance(i));
             fragments.put("Comments " + Integer.toString(i), CommentsFragment.newInstance(i));
         }
 
-        fragments.put("Home",HomeFragment.newInstance());
-        fragments.put("Map",MapFragment.newInstance());
+
+        fragments.put("Home", HomeFragment.newInstance());
+        fragments.put("Map", MapFragment.newInstance());
+
+        if(!isActivityRecreated) {
+            //MapFragment mapFragment = MapFragment.newInstance();
+
+            //fragmentManager.beginTransaction().add(mapFragment, "Map").commit();
+            //fragments.put("Map", fragmentManager.findFragmentByTag("Map"));
+        }
 
         Log.i(TAG, "Fragments Created!");
-    }
 
+        //}
+    }
 }

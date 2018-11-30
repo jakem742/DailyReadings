@@ -14,16 +14,19 @@ import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.GeoJson;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import timber.log.Timber;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.BIBLE;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.BIBLE_ABBR;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.MONTHS;
 
 
@@ -37,7 +40,7 @@ public class Readings {
     private String[][] commentPost;
     private ArrayList<HashMap<String, String>> commentList;
     private ArrayList<HashMap<String, String>> verseList;
-    private ArrayList<String[]> places;
+    private ArrayList<Map<String, String>> places;
     private Integer day;
     private Integer month;
     private Context context;
@@ -69,11 +72,12 @@ public class Readings {
         this.readingNum = reading;
         this.day = day;
         this.month = month;
-        if (day != 29  && month != 1) {
+        if (day == 29  && month == 1) {
+            //TODO: Fix leap day implementation
+            leapDay = true;
+        } else {
             leapDay = false;
             initialise();
-        } else {
-            leapDay = true;
         }
     }
 
@@ -362,14 +366,50 @@ public class Readings {
 
                             placesCursor = readingsDB.rawQuery("SELECT * FROM bible_places_NAME WHERE Name = '" + placeName.replaceAll("\'", "\'\'") + "\'", null);
                             Integer latColumn = placesCursor.getColumnIndex("Lat");
+                            Integer longColumn = placesCursor.getColumnIndex("Long");
+                            Integer typeColumn = placesCursor.getColumnIndex("Type");
+                            Integer versesColumn = placesCursor.getColumnIndex("Verses");
 
                             if (placesCursor.moveToFirst()) {
                                 do {
-                                    String placeLat = placesCursor.getString(latColumn);
-                                    String placeLong = placesCursor.getString(latColumn + 1);
+                                    String placeLat = placesCursor.getString(latColumn).replaceAll("[^\\d.]", "");
+                                    String placeLong = placesCursor.getString(longColumn).replaceAll("[^\\d.]", "");
+                                    String placeVerses = placesCursor.getString(versesColumn);
+                                    String type = placesCursor.getString(typeColumn);
+
+                                    String[] verses = placeVerses.trim().split(",");
+
+                                    StringBuilder versesList = new StringBuilder();
+
+                                    HashMap<String,String> placeData = new HashMap<>();
+                                    placeData.put("name",placeName);
+                                    placeData.put("latitude",placeLat);
+                                    placeData.put("longitude",placeLong);
+                                    if (type == null) placeData.put("type","Unknown");
+                                    else placeData.put("type",type);
+
+                                    if (verses.length == 1) {
+                                        placeData.put("verses",placeVerses);
+                                        Log.i(TAG,"Only one place found!");
+                                    } else {
+
+                                        for(String book : bookName) {
+                                            String book_abbr = BIBLE_ABBR[Arrays.asList(BIBLE).indexOf(book)];
+                                            for (Integer chapter : chapters){
+                                                for (String verse : verses) {
+
+                                                    if (verse.contains(book_abbr + " " + chapter.toString())) {
+                                                        versesList.append(verse).append(",");
+                                                    }
+                                                }
+                                            }
+                                        }
 
 
-                                    String[] placeData = new String[]{placeName, placeLat, placeLong};
+                                        placeData.put("verses",versesList.substring(0, versesList.length() - 1).trim());
+
+                                    }
+                                            //{placeName, placeLat, placeLong};
                                     //Log.i(TAG, "Place Info: " + Arrays.toString(placeData));
                                     places.add(placeData);
 
@@ -398,7 +438,7 @@ public class Readings {
 
     }
 
-    public ArrayList<String[]> getPlaces() {
+    public ArrayList<Map<String,String>> getPlaces() {
         return places;
     }
 
@@ -520,9 +560,20 @@ public class Readings {
             placeJson = new StringBuilder();
             placeJson.append("{\"type\": \"FeatureCollection\",\"features\": [");
 
-            for (String[] place : places) {
+            for (Map place : places) {
 
-                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"name\": \"" + place[0] +"\",\"selected\": false},\"geometry\": {\"type\": \"Point\",\"coordinates\": [" + place[2].replaceAll("[^\\d.]", "") + "," + place[1].replaceAll("[^\\d.]", "") + "]}}");
+                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"name\": \"")
+                        .append(place.get("name"))
+                        .append("\",\"selected\": false, \"verses\": \"")
+                        .append(place.get("verses"))
+                        .append("\", \"type\":")
+                        .append(place.get("type"))
+                        .append("},\"geometry\": {\"type\": \"Point\",\"coordinates\": [")
+                        .append(place.get("longitude"))
+                        .append(",")
+                        .append(place.get("latitude"))
+                        .append("]}}");
+
                 if (places.get(places.size()-1) != place ) placeJson.append(",");
             }
 
@@ -752,7 +803,7 @@ public class Readings {
         //Open the db for current translation
         //TODO: Allow for different translations
         String translation = PreferenceManager.getDefaultSharedPreferences(context).getString("translation","ESV");
-        Log.i(TAG,translation);
+
         SQLiteDatabase bibleDB = context.openOrCreateDatabase(translation + ".db", MODE_PRIVATE, null);
         Cursor reading = null;
 

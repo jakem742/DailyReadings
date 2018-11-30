@@ -51,6 +51,7 @@ public class ReadingFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.i(TAG,"Creating reading fragment");
         if (getArguments() != null) {
             this.readingNum = getArguments().getInt(READING, 0);
         }

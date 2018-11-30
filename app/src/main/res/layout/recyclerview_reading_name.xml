@@ -27,7 +27,7 @@
             android:text="TextView"
             android:textIsSelectable="false"
             android:textSize="24sp" />
-
+        <!--
         <ImageButton
             android:id="@+id/imageButton"
             android:layout_width="wrap_content"
@@ -36,6 +36,8 @@
             android:layout_weight="1"
             android:background="?android:selectableItemBackground"
             app:srcCompat="@drawable/ic_play_circle_open_24dp" />
+            -->
+
     </LinearLayout>
 
     <!--android:textAlignment="center"-->

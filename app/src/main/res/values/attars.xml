@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <attr name="colourBodyText" format="reference|color" />
+    <attr name="colourBodyTextLight" format="reference|color" />
     <attr name="colourBodyTextNight" format="reference|color" />
     <attr name="colourRefText" format="reference|color" />
+    <attr name="colourRefMapText" format="reference|color" />
 
     <!-- OLD APP COLOURS-->
 
