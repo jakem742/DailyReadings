@@ -11,6 +11,7 @@
     <string name="mapbox_access_token">pk.eyJ1IjoiamFrZW1hZGRlbiIsImEiOiJkYUhBc1hjIn0.4vetwHUj0d9PQAzxvGrxgg</string>
     <string name="mapbox_style_custom_bible">mapbox://styles/jakemadden/cjo3z4v16dju92so6jswmuffb</string>
     <string name="title_commandment_widget">Commandments Of Christ</string>
+    <string name="title_readings_widget">Daily Readings</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Strings related to Settings -->
