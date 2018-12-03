@@ -1,23 +1,15 @@
 package com.liftyourheads.dailyreadings.activities;
 
 import android.app.Activity;
-import android.app.DatePickerDialog;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
@@ -25,13 +17,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.DatePicker;
-import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.liftyourheads.dailyreadings.R;
-import com.liftyourheads.dailyreadings.adapters.ReadingSummaryRecyclerViewAdapter;
 import com.liftyourheads.dailyreadings.fragments.CommentsRootFragment;
 import com.liftyourheads.dailyreadings.fragments.HomeFragment;
 import com.liftyourheads.dailyreadings.fragments.MapFragment;
@@ -43,14 +31,9 @@ import com.liftyourheads.dailyreadings.utils.CustomViewPager;
 import com.liftyourheads.dailyreadings.utils.DataBaseHelper;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Stack;
 import java.util.TimeZone;
 
@@ -74,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     public static int selectedMonth = 0;
     public static int selectedDay = 0;
 
-    static MapFragment mapFragment;
+    public static MapFragment mapFragment;
 
     static MainViewPagerAdapter adapterViewPager;
     public static CustomViewPager mainViewPager;
@@ -253,6 +236,17 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     }
 
+    public static void updateTabNames(Context context){
+        TabLayout tabs = ((MainActivity)context).findViewById(R.id.reading_tab_layout);
+
+        //Initialise the reading tabs
+        for (int i = 0; i < 3; i++) {
+            if ( reading[i].getFullName() != null && tabs.getTabAt(i) != null ) {
+                tabs.getTabAt(i).setText(reading[i].getFullName());
+            }
+        }
+    }
+
     public static void initialiseTabs(TabLayout tabs) {
 
         //Initialise the reading tabs
@@ -379,7 +373,13 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     }
 
-    public void getCurrentDate() {
+    public static void setActivityRecreated(int day, int month) {
+        isActivityRecreated = true;
+        selectedMonth = month;
+        selectedDay = day;
+    }
+
+    public static void getCurrentDate() {
 
         //// GET CURRENT DATE INFO ////
 
@@ -469,6 +469,10 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         Log.i(TAG,fragmentManager.getFragments().toString());
 
         if (curReading != readingNumber) {
+
+            mapFragment.setCurrentLayer(readingNumber);
+            mapFragment.zoomExtents(readingNumber);
+
             curReading = readingNumber;
 
             FragmentTransaction trans = fragmentManager.beginTransaction();
@@ -481,8 +485,6 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
             //MapFragment mapFragment = (MapFragment)fragmentManager.findFragmentById(R.id.map_fragment_root_id);
             //Log.i(TAG,"Map fragment: " + mapFragment);
             //if (isActivityRecreated && !mapRecreated) mapFragment.refreshMap(); mapRecreated = true;
-            mapFragment.setCurrentLayer(curReading);
-            mapFragment.zoomExtents(curReading);
             //} else Log.i(TAG,"No map fragment to replace!");
 
             trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);

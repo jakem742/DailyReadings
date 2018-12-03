@@ -63,12 +63,12 @@ public class CommentsFragment extends Fragment {
 
         Log.i(TAG,"Processing reading comments: " + readingNum.toString());
 
-        updateNotesListView(view);
+        updateNotesListView();
 
         return view;
     }
 
-    public void updateNotesListView(View view) {
+    public void updateNotesListView() {
 
         ArrayList<HashMap<String,String>> comments = reading[readingNum].getReadingComments();
 

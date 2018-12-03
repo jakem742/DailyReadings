@@ -71,14 +71,18 @@ public class ReadingFragment extends Fragment {
         Log.i(TAG,"Processing bible verses: " + this.readingNum.toString());
 
 
-        setBibleListContent(view);
+        setBibleListContent();
 
         return view;
 
     }
 
+    public void notifyUpdateRecyclerView(){
+        readingAdapter.notifyDataSetChanged();
+    }
 
-    public void setBibleListContent(View view) {
+
+    public void setBibleListContent() {
 
         ArrayList<HashMap<String,String>> reading = MainActivity.reading[this.readingNum].getReadingVerses();
 

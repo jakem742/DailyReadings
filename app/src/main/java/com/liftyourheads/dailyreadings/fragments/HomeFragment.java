@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.TimeZone;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curReading;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.fragmentManager;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.reading;
 
@@ -160,8 +161,19 @@ public class HomeFragment extends Fragment {
 
                 setDateText(readingCalendar);
 
+                MainActivity.setActivityRecreated(dayOfMonth,monthOfYear);
+                MainActivity.getCurrentDate();
+                MainActivity.initialiseReadings(getContext());
+                MainActivity.updateTabNames(getContext());
+                updateTitlesRecyclerView();
+                MainActivity.mapFragment.updateMap();
 
-                MainActivity.recreateActivity(getActivity(),monthOfYear,dayOfMonth);
+                ReadingFragment readingFragment = (ReadingFragment) MainActivity.fragments.get("Reading " + Integer.toString(curReading));
+                CommentsFragment commentsFragment = (CommentsFragment) MainActivity.fragments.get("Comments " + Integer.toString(curReading));
+
+                readingFragment.setBibleListContent();
+                commentsFragment.updateNotesListView();
+                //MainActivity.recreateActivity(getActivity(),monthOfYear,dayOfMonth);
                 //MainActivity.initialiseReadings(view.getContext(),dayOfMonth,monthOfYear);
                 //MainActivity.initialiseTabs();
                 //MainActivity.generateReadingFragments();
@@ -182,7 +194,7 @@ public class HomeFragment extends Fragment {
             }
         };
 
-        //date_tv.setOnClickListener(dateSelector);
+        date_tv.setOnClickListener(dateSelector);
 
     }
 

@@ -45,17 +45,21 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -138,7 +142,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                              Bundle savedInstanceState) {
         Log.i(TAG,"Creating map view");
 
-        //super.onCreateView(inflater,container,savedInstanceState);
+        super.onCreateView(inflater,container,savedInstanceState);
 
         //if (view == null) {
             Mapbox.getInstance(requireActivity(), getString(R.string.mapbox_access_token));
@@ -170,11 +174,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 Log.i(TAG,"Retrieving map instance");
                 map = mapboxMap;
 
-                for (Integer i=0; i < 3; i++){
-                    map.removeLayer(LAYER_LOCATIONS + i.toString());
-                    map.removeLayer(LAYER_READING + i.toString());
-                    map.removeLayer(LAYER_CALLOUTS + i.toString());
-                }
 
                 Log.i(TAG, "Map ready. Loading markers");
 
@@ -201,14 +200,14 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     }
 
-    public void refreshMap() {
+    public void updateMap() {
 
-        getMapAsync(getContext());
+        //getMapAsync(getContext());
 
-        //setupSources();
+        setupSources();
         //setupIcons();
-        //setupReadingLayers();
-        //setupCalloutViews();
+        setupReadingLayers();
+        setupCalloutViews();
 
     }
 
@@ -391,6 +390,12 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 readingSourceString = reading[i].getPlacesAsString();
                 featureCollection[i] = FeatureCollection.fromJson(readingSourceString);
                 layers[i] = new GeoJsonSource(LAYER_READING + i.toString(),featureCollection[i]);
+                if (map.getSource(LAYER_READING + i.toString())!= null) {
+                    map.removeLayer(LAYER_LOCATIONS + i.toString());
+                    map.removeLayer(LAYER_CALLOUTS + i.toString());
+                    map.removeSource(LAYER_READING + i.toString()); //Remove any existing source with this name
+                    Log.i(TAG, "Removing source + symbolLayer & calloutLayer:" + LAYER_READING + i.toString());
+                }
                 map.addSource(layers[i]);
         }
 
@@ -418,7 +423,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
                 Log.i(TAG, "Iterating to layer " + i.toString());
 
-                map.removeLayer(LAYER_LOCATIONS + i.toString()); //Clear existing layers as needed
+                //map.removeLayer(LAYER_LOCATIONS + i.toString()); //Clear existing layers as needed
 
                 symbolLayers[i] = new SymbolLayer(LAYER_LOCATIONS + i.toString(), LAYER_READING + i.toString());
                 symbolLayers[i].setProperties(
@@ -453,6 +458,10 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
     public void setCurrentLayer(int readingNum) {
 
         if (map != null) {
+
+            deselectAll();
+            refreshSource();
+
             Layer curLayer = map.getLayer(LAYER_LOCATIONS + Integer.toString(readingNum));
 
             curLayer.setProperties(visibility(VISIBLE));
@@ -574,6 +583,17 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
             } else {
                 //There aren't any points to see! Grey out the map area
+                FrameLayout.LayoutParams lparams = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+                lparams.gravity = Gravity.CENTER;
+                TextView tv = new TextView(getContext());
+                tv.setLayoutParams(lparams);
+                tv.setText("NO PLACES FOUND");
+                tv.setTextSize(getResources().getDimensionPixelSize(R.dimen.body_text_size));
+                tv.setTextColor(getResources().getColor(R.color.colorLight));
+
+                this.mapOverlay.addView(tv);
+
                 cu = CameraUpdateFactory.newLatLngZoom(new LatLng(33.813, 33.781), 4F);
                 mapOverlay.setVisibility(View.VISIBLE);
                 map.getUiSettings().setAllGesturesEnabled(false);
@@ -685,7 +705,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        //mMapView.onSaveInstanceState(outState);
+        mMapView.onSaveInstanceState(outState);
     }
 
     @Override

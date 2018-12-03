@@ -9,7 +9,7 @@
     android:id="@+id/map_fragment_root_id">
 
 
-<com.mapbox.mapboxsdk.maps.MapView
+    <com.mapbox.mapboxsdk.maps.MapView
         android:id="@+id/bibleMapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
