@@ -223,9 +223,9 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 TextView titleTv = view.findViewById(R.id.title);
                 titleTv.setText(name);
 
-                String type = feature.getStringProperty(PROPERTY_TYPE);
-                TextView styleTv = view.findViewById(R.id.type);
-                styleTv.setText(type);
+                //String type = feature.getStringProperty(PROPERTY_TYPE);
+                //TextView styleTv = view.findViewById(R.id.type);
+                //styleTv.setText(type);
 
                 String verses = feature.getStringProperty(PROPERTY_VERSES);
                 TextView versesTv = view.findViewById(R.id.verses);
