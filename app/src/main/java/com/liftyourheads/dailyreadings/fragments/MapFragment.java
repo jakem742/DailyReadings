@@ -48,6 +48,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -173,7 +174,8 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
                 Log.i(TAG,"Retrieving map instance");
                 map = mapboxMap;
-
+                //map.getUiSettings().setAttributionMargins(50,0,0,(int) convertPixelsToDp(850,getContext()));
+                //map.getUiSettings().setLogoMargins(100,0,0,(int) convertPixelsToDp(850,getContext()));
 
                 Log.i(TAG, "Map ready. Loading markers");
 
@@ -200,12 +202,21 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     }
 
+    /**
+     * This method converts device specific pixels to density independent pixels.
+     *
+     * @param px A value in px (pixels) unit. Which we need to convert into db
+     * @param context Context to get resources and device specific display metrics
+     * @return A float value to represent dp equivalent to px value
+     */
+    public static float convertPixelsToDp(float px, Context context){
+        return px / ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
+
     public void updateMap() {
 
-        //getMapAsync(getContext());
-
         setupSources();
-        //setupIcons();
         setupReadingLayers();
         setupCalloutViews();
 
@@ -230,10 +241,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 String verses = feature.getStringProperty(PROPERTY_VERSES);
                 TextView versesTv = view.findViewById(R.id.verses);
                 versesTv.setText(verses);
-
-                //boolean favourite = feature.getBooleanProperty(PROPERTY_FAVOURITE);
-                //ImageView imageView = (ImageView) view.findViewById(R.id.logoView);
-                //imageView.setImageResource(favourite ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
 
                 Bitmap bitmap = SymbolGeneratorUtil.generate(view);
                 imagesMap.put(name, bitmap);
@@ -394,7 +401,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                     map.removeLayer(LAYER_LOCATIONS + i.toString());
                     map.removeLayer(LAYER_CALLOUTS + i.toString());
                     map.removeSource(LAYER_READING + i.toString()); //Remove any existing source with this name
-                    Log.i(TAG, "Removing source + symbolLayer & calloutLayer:" + LAYER_READING + i.toString());
+                    Log.i(TAG, "Removing source + symbolLayer & calloutLayer for reading " + Integer.toString(i));
                 }
                 map.addSource(layers[i]);
         }
@@ -423,7 +430,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
                 Log.i(TAG, "Iterating to layer " + i.toString());
 
-                //map.removeLayer(LAYER_LOCATIONS + i.toString()); //Clear existing layers as needed
 
                 symbolLayers[i] = new SymbolLayer(LAYER_LOCATIONS + i.toString(), LAYER_READING + i.toString());
                 symbolLayers[i].setProperties(

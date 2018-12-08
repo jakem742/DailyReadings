@@ -857,17 +857,20 @@ public class Readings {
 
                         int contentIndex = reading.getColumnIndex("text");
 
+                        if (reading.getCount() > 0) {
+                            reading.moveToFirst();
+                            int j = 0;
 
-                        reading.moveToFirst();
-                        int j = 0;
+                            do {
 
-                        do {
+                                verses[counter][i][j] = reading.getString(contentIndex).replaceAll("’", "'").replaceAll("<f>.*?</f>", "");//.replaceAll("<pb/>", "")
+                                j++;
 
-                            verses[counter][i][j] = reading.getString(contentIndex).replaceAll("’", "'").replaceAll("<f>.*?</f>", "");//.replaceAll("<pb/>", "")
-                            j++;
+                            } while (reading.moveToNext());
+                        } else {
 
-                        } while (reading.moveToNext());
-
+                            Log.e(TAG,"Unable to find verses in db for reading " + fullName);
+                        }
                     }
 
                 } else {

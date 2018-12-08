@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/quoteTV"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:lineSpacingMultiplier="1.3"
+        android:longClickable="true"
+        android:paddingTop="8dp"
+        android:textColor="@color/colourBodyText"
+        android:textIsSelectable="true"
+        android:textSize="@dimen/ref_body_text_size"
+        android:textStyle="italic"
+        tools:text="Quote" />
+
+    <TextView
+        android:id="@+id/referenceTV"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:focusable="true"
+        android:gravity="start"
+        android:longClickable="true"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:textColor="@color/colorPrimary"
+        android:textIsSelectable="true"
+        android:textSize="@dimen/ref_body_text_size"
+        android:textStyle="bold"
+        tools:text="Reference" />
+
+</LinearLayout>

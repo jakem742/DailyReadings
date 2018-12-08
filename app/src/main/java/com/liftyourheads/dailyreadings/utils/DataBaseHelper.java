@@ -1,11 +1,14 @@
 package com.liftyourheads.dailyreadings.utils;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Switch;
 
 import com.liftyourheads.dailyreadings.activities.MainActivity;
 
@@ -14,6 +17,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import timber.log.Timber;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
     private SQLiteDatabase myDataBase;
@@ -23,11 +33,27 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private static String DATABASE_PATH; //= "/data/data/com.liftyourheads.dailyreadings/databases/";
     private static String TAG = "Database Helper";
     private static final int DATABASE_VERSION = 1;
+    Map<String, Integer> DATABASE_VERSIONS;
+
 
     public DataBaseHelper(Context context, String dbName) {
+
+
         super(context, dbName, null, DATABASE_VERSION);
         this.myContext = context;
         this.dbName = dbName;
+
+        DATABASE_VERSIONS = new HashMap<String, Integer>() {{
+            put("ESV", 1);
+            put("KJV", 1);
+            put("NET", 1);
+            put("BiblePlaces", 1);
+            put("DailyReadings", 1);
+            put("CommandmentsOfChrist", 2);
+        }};
+
+        DATABASE_PATH = myContext.getDatabasePath(dbName).getPath() + ".db";
+
 
     }
 
@@ -35,23 +61,24 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     //Create a empty database on the system
     public void createDatabase() throws IOException {
 
-        DATABASE_PATH = myContext.getDatabasePath(dbName).getPath();
-
         boolean dbExist = checkDataBase();
 
         if(dbExist)
         {
-            Log.v("DB Exists", DATABASE_PATH + " exists");
+            //this.onUpgrade(getWritableDatabase(),getReadableDatabase().getVersion(),DATABASE_VERSION);
+            //Log.v(TAG, DATABASE_PATH + " exists. Cur version = " + this.getWritableDatabase().getVersion());
             // By calling this method here onUpgrade will be called on a
             // writeable database, but only if the version number has been
             // bumped
-            //onUpgrade(myDataBase, DATABASE_VERSION_old, DATABASE_VERSION);
+            //this.openDatabase();
+            this.openDatabase();
+            this.onUpgrade(myDataBase, myDataBase.getVersion(), DATABASE_VERSIONS.get(dbName));
         }
 
         boolean dbExist1 = checkDataBase();
         if(!dbExist1)
         {
-            this.getReadableDatabase();
+            //this.getReadableDatabase();
 
                 this.close();
                 copyDataBase();
@@ -59,6 +86,28 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
 
     }
+
+    public void recreateDatabase() throws IOException {
+        boolean dbExist = checkDataBase();
+
+        if(dbExist)
+        {
+            Log.v(TAG, DATABASE_PATH + " exists. Deleting now.");
+            db_delete();
+        }
+
+        boolean dbExist1 = checkDataBase();
+        if(!dbExist1)
+        {
+            this.getReadableDatabase();
+
+            this.close();
+            copyDataBase();
+
+        }
+    }
+
+
     //Check database already exist or not
     private boolean checkDataBase()
     {
@@ -79,7 +128,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     {
 
         try {
-            InputStream mInput = myContext.getAssets().open("databases/" + dbName);
+            InputStream mInput = myContext.getAssets().open("databases/" + dbName + ".db");
             String outFileName = DATABASE_PATH;
             OutputStream mOutput = new FileOutputStream(outFileName);
             byte[] mBuffer = new byte[2024];
@@ -94,6 +143,9 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             e.printStackTrace();
             throw new Error("Error copying database");
         }
+        openDatabase();
+        myDataBase.setVersion(DATABASE_VERSIONS.get(dbName));
+        myDataBase.close();
     }
     //delete database
     private void db_delete()
@@ -105,6 +157,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             System.out.println("Delete database file: " + file);
         }
     }
+
     //Open database
     public void openDatabase() throws SQLException
     {
@@ -128,8 +181,11 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (newVersion > oldVersion)
         {
-            Log.v("Database Upgrade", "Database version higher than old.");
-            db_delete();
+            Log.v(TAG, "Database out of date! Upgrading from Version " + Integer.toString(oldVersion) + " to Version " + Integer.toString(newVersion));
+
+            db.close();
+            this.db_delete();
+            this.copyDataBase();
         }
 
     }

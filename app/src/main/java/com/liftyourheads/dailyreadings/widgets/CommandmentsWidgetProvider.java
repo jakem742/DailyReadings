@@ -24,7 +24,7 @@ import static android.content.Context.MODE_PRIVATE;
 public class CommandmentsWidgetProvider extends AppWidgetProvider {
 
     private static final String ACTION_SCHEDULED_UPDATE = "com.liftyourheads.dailyreadings.SCHEDULED_UPDATE";
-    private static final String QUOTES_DB = "CommandmentsOfChrist.db";
+    private static final String QUOTES_DB = "CommandmentsOfChrist";
     private static final String QUOTES_TABLE = "Commandments_Of_Christ";
 
     String[] text;
@@ -76,10 +76,9 @@ public class CommandmentsWidgetProvider extends AppWidgetProvider {
 
         MainActivity.checkDatabase(context,QUOTES_DB);
 
-        SQLiteDatabase commandmentsDB = context.openOrCreateDatabase(QUOTES_DB, MODE_PRIVATE, null);
+        SQLiteDatabase commandmentsDB = context.openOrCreateDatabase(QUOTES_DB + ".db", MODE_PRIVATE, null);
 
-
-        Cursor quotes = commandmentsDB.rawQuery("SELECT * FROM " + QUOTES_TABLE + " WHERE Used = 'no'", null);
+        Cursor quotes = commandmentsDB.rawQuery("SELECT * FROM " + QUOTES_TABLE, null);
         Log.i("Quotes Found", Integer.toString(quotes.getCount()));
 
         Random rand = new Random();
@@ -103,6 +102,8 @@ public class CommandmentsWidgetProvider extends AppWidgetProvider {
         Log.i("Quote",quote[0] + " " + quote[1]);
 
         quotes.close();
+
+        commandmentsDB.close();
 
         return quote;
 

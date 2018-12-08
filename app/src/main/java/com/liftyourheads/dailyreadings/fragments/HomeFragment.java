@@ -11,13 +11,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
@@ -26,15 +25,15 @@ import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 
 import static android.content.Context.MODE_PRIVATE;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.curReading;
-import static com.liftyourheads.dailyreadings.activities.MainActivity.fragmentManager;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.reading;
 
 public class HomeFragment extends Fragment {
@@ -43,10 +42,12 @@ public class HomeFragment extends Fragment {
     public ReadingSummaryRecyclerViewAdapter readingNamesAdapter;
     RecyclerView readingNamesRecyclerView;
 
+    ConstraintLayout commandment_constraint_layout;
     ImageButton settings;
+    public HashMap<String,String> quote;
     Calendar readingCalendar;
     TextView date_tv;
-    private static final String QUOTES_DB = "CommandmentsOfChrist.db";
+    private static final String QUOTES_DB = "CommandmentsOfChrist";
     private static final String QUOTES_TABLE = "Commandments_Of_Christ";
     private static String TAG = "Home Fragment";
 
@@ -74,10 +75,7 @@ public class HomeFragment extends Fragment {
 
         if (view == null) view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        //TextView date_textview = view.findViewById(R.id.date_textview);
-        TextView title_commandment_textview = view.findViewById(R.id.title_commandment_textview);
-        TextView body_commandment_textview = view.findViewById(R.id.body_commandment_textview);
-        TextView ref_commandment_textview = view.findViewById(R.id.ref_commandment_textview);
+        commandment_constraint_layout = view.findViewById(R.id.commandment_constraint_layout);
         settings = view.findViewById(R.id.settings_button);
         this.readingCalendar  = Calendar.getInstance();
         date_tv = view.findViewById(R.id.date_textView);
@@ -85,35 +83,10 @@ public class HomeFragment extends Fragment {
         readingNamesRecyclerView = view.findViewById(R.id.reading_title_recycler);
 
 
-
-
-        //String date = MONTHS[curMonth] + " " + Integer.toString(curDay);
-        //date_textview.setText(date);
         updateTitlesRecyclerView();
 
-        String[] quote = getQuote();
-        String section;
+        updateQuotesView();
 
-        int position = Integer.parseInt(quote[0]);
-
-        if (position < 11) section = "God";
-        else if (position < 21) section = "Christ";
-        else if (position < 31) section = "Believers";
-        else if (position < 41) section = "Strangers";
-        else if (position < 51) section = "Character";
-        else if (position < 73) section = "Actions";
-        else if (position < 81) section = "Thoughts/Speech";
-        else if (position < 86) section = "Marriage";
-        else if (position < 88) section = "Parenting";
-        else if (position < 91) section = "Superiors";
-        else if (position < 97) section = "Disobedient Believers";
-        else if (position < 101) section = "Body of Believers";
-        else section = "Unknown";
-
-
-        title_commandment_textview.setText(section);
-        body_commandment_textview.setText(quote[1]);
-        ref_commandment_textview.setText(quote[2]);
         GregorianCalendar cal = new GregorianCalendar(TimeZone.getDefault());
         setDateText(cal);
 
@@ -123,6 +96,20 @@ public class HomeFragment extends Fragment {
 
     }
 
+    public void updateQuotesView(){
+        TextView title_commandment_textview = view.findViewById(R.id.title_commandment_textview);
+        TextView body_commandment_textview = view.findViewById(R.id.body_commandment_textview);
+        TextView ref_commandment_textview = view.findViewById(R.id.ref_commandment_textview);
+
+            Log.i(TAG,"Processing quote " + Integer.toString(4));
+            getQuote();
+            MainActivity.initialiseDialogFragment(getContext(), quote.get("References"));
+
+        title_commandment_textview.setText(quote.get("Title"));
+        body_commandment_textview.setText(quote.get("Quote"));
+        ref_commandment_textview.setText(quote.get("References"));
+
+    }
 
     public void updateTitlesRecyclerView() {
 
@@ -196,6 +183,13 @@ public class HomeFragment extends Fragment {
 
         date_tv.setOnClickListener(dateSelector);
 
+        commandment_constraint_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MainActivity.showDialogFragment(quote.get("Quote"),quote.get("References"));
+            }
+        });
+
     }
 
     public void setDateText(Calendar calendar){
@@ -208,42 +202,51 @@ public class HomeFragment extends Fragment {
     }
 
 
-    public String[] getQuote() {
+    public void getQuote() {
 
         MainActivity.checkDatabase(getContext(),QUOTES_DB);
 
-        SQLiteDatabase commandmentsDB = getContext().openOrCreateDatabase(QUOTES_DB, MODE_PRIVATE, null);
+        SQLiteDatabase commandmentsDB = getContext().openOrCreateDatabase(QUOTES_DB + ".db", MODE_PRIVATE, null);
 
 
-        Cursor quotes = commandmentsDB.rawQuery("SELECT * FROM " + QUOTES_TABLE + " WHERE Used = 'no'", null);
+        Cursor quotes = commandmentsDB.rawQuery("SELECT * FROM " + QUOTES_TABLE,null); //+ " WHERE Used = 'no'", null);
         //Log.i("Quotes Found", Integer.toString(quotes.getCount()));
 
         Random rand = new Random();
         int num = rand.nextInt(quotes.getCount());
 
         //Log.i("Random number chosen",Integer.toString(num));
-
         quotes.moveToPosition(num);
-        String[] quote = new String[3];
+        quote = new HashMap<>();
 
         //Quote number
-        quote[0] = quotes.getString(0);
+        quote.put("Number",quotes.getString(0));
         //Quote content
-        quote[1] = quotes.getString(1);
+        quote.put("Quote",quotes.getString(1));
         //Quote references
-        quote[2] = quotes.getString(2);
+        quote.put("References",quotes.getString(2));
 
-        //Update comment timestampe
-        //ContentValues timeStamp = new ContentValues();
-        //timeStamp.put("Used",System.nanoTime());
-        //commandmentsDB.update(QUOTES_TABLE,timeStamp,"LIMIT ?,1", new String[] {Integer.toString(num-1)});
+        int position = Integer.parseInt(quote.get("Number"));
 
-        //Log.i("Quote",quote[0] + " " + quote[1]);
+        String title = "";
+
+        if (position < 11) title = "God";
+        else if (position < 21) title = "Christ";
+        else if (position < 31) title = "Believers";
+        else if (position < 41) title = "Strangers";
+        else if (position < 51) title = "Character";
+        else if (position < 73) title = "Actions";
+        else if (position < 81) title = "Thoughts/Speech";
+        else if (position < 86) title = "Marriage";
+        else if (position < 88) title = "Parenting";
+        else if (position < 91) title = "Superiors";
+        else if (position < 97) title = "Disobedient Believers";
+        else if (position < 101) title = "Body of Believers";
+
+        quote.put("Title",title);
 
         quotes.close();
         commandmentsDB.close();
-
-        return quote;
 
     }
 

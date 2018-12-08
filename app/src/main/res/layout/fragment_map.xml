@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:mapbox="http://schemas.android.com/apk/res-auto"
@@ -7,12 +7,14 @@
     android:layout_height="match_parent"
     tools:context="com.liftyourheads.dailyreadings.activities.MainActivity"
     android:id="@+id/map_fragment_root_id">
+    <!--android:layout_marginBottom="200dp"-->
 
 
     <com.mapbox.mapboxsdk.maps.MapView
         android:id="@+id/bibleMapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_alignParentBottom="@+id/navigation"
         mapbox:mapbox_cameraTargetLat="40.73581"
         mapbox:mapbox_cameraTargetLng="-73.99155"
         mapbox:mapbox_styleUrl="@string/mapbox_style_custom_bible"/>
@@ -26,4 +28,4 @@
         android:background="@android:color/background_dark"
         android:visibility="invisible" />
 
-</android.support.design.widget.CoordinatorLayout>
+</RelativeLayout>
