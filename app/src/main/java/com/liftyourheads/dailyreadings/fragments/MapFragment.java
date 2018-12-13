@@ -174,19 +174,13 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
                 Log.i(TAG,"Retrieving map instance");
                 map = mapboxMap;
+
+                new LoadPoiDataTask((MapFragment) fragments.get("Map")).execute();
                 //map.getUiSettings().setAttributionMargins(50,0,0,(int) convertPixelsToDp(850,getContext()));
                 //map.getUiSettings().setLogoMargins(100,0,0,(int) convertPixelsToDp(850,getContext()));
 
                 Log.i(TAG, "Map ready. Loading markers");
 
-                setupSources();
-                setupIcons();
-                setupReadingLayers();
-                setupCalloutViews();
-
-                setCurrentLayer(curReading);
-                zoomExtents(curReading);
-                setClickListener();
 
                 //Todo: fix screen rotate crash
 
@@ -202,66 +196,153 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
     }
 
+    public void setupData() {
+
+        if (map == null) return;
+
+        setupSources();
+        setupIcons();
+        setupReadingLayers();
+        //setupCalloutViews();
+
+        setCurrentLayer(curReading);
+        zoomExtents(curReading);
+        setClickListener();
+
+    }
     /**
-     * This method converts device specific pixels to density independent pixels.
-     *
-     * @param px A value in px (pixels) unit. Which we need to convert into db
-     * @param context Context to get resources and device specific display metrics
-     * @return A float value to represent dp equivalent to px value
+     * AsyncTask to load data from the assets folder.
      */
-    public static float convertPixelsToDp(float px, Context context){
-        return px / ((float) context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    private static class LoadPoiDataTask extends AsyncTask<Void, Void, ArrayList<Map<String,String>>> {
+
+        private final WeakReference<MapFragment> fragmentRef;
+
+        LoadPoiDataTask(MapFragment fragment) {
+            this.fragmentRef = new WeakReference<>(fragment);
+        }
+
+        @Override
+        protected ArrayList<Map<String,String>> doInBackground(Void... params) {
+            MapFragment fragment = fragmentRef.get();
+
+            if (fragment == null) {
+                return null;
+            }
+            for (int i = 0; i < 3; i++) {
+                reading[i].processPlaces();
+                reading[i].createPlacesJson();
+            }
+
+            return reading[0].getPlaces();
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<Map<String,String>> places) {
+            super.onPostExecute(places);
+            MapFragment fragment = fragmentRef.get();
+
+            if (places == null || fragment == null) {
+                return;
+            }
+
+            fragment.setupData();
+
+            new GenerateViewIconTask(fragment).execute(fragment.featureCollection);
+
+        }
+
+    }
+
+
+    /**
+     * AsyncTask to generate Bitmap from Views to be used as iconImage in a SymbolLayer.
+     * <p>
+     * Call be optionally be called to update the underlying data source after execution.
+     * </p>
+     * <p>
+     * Generating Views on background thread since we are not going to be adding them to the view hierarchy.
+     * </p>
+     */
+    private static class GenerateViewIconTask extends AsyncTask<FeatureCollection, Void, HashMap<String, Bitmap>> {
+
+        private final HashMap<String, View> viewMap = new HashMap<>();
+        private final WeakReference<MapFragment> fragmentRef;
+
+        GenerateViewIconTask(MapFragment fragment) {
+            this.fragmentRef = new WeakReference<>(fragment);
+        }
+
+
+        @SuppressWarnings("WrongThread")
+        @Override
+        protected HashMap<String, Bitmap> doInBackground(FeatureCollection... params) {
+            MapFragment fragment= fragmentRef.get();
+
+            HashMap<String, Bitmap> imagesMap = new HashMap<>();
+
+            if (fragment != null) {
+                for (FeatureCollection collection : params) {
+
+                    for (Feature feature : collection.features()) {
+                        View view = LayoutInflater.from(fragment.getContext()).inflate(R.layout.layout_info_window, null);
+
+                        String name = feature.getStringProperty(PROPERTY_TITLE);
+                        TextView titleTv = view.findViewById(R.id.title);
+                        titleTv.setText(name);
+
+                        //String type = feature.getStringProperty(PROPERTY_TYPE);
+                        //TextView styleTv = view.findViewById(R.id.type);
+                        //styleTv.setText(type);
+
+                        String verses = feature.getStringProperty(PROPERTY_VERSES);
+                        TextView versesTv = view.findViewById(R.id.verses);
+                        versesTv.setText(verses);
+
+                        Bitmap bitmap = SymbolGeneratorUtil.generate(view);
+                        imagesMap.put(name, bitmap);
+                        viewMap.put(name, view);
+                    }
+                }
+
+            } else {
+                return null;
+            }
+                return imagesMap;
+        }
+
+        @Override
+        protected void onPostExecute(HashMap<String, Bitmap> bitmapHashMap) {
+            super.onPostExecute(bitmapHashMap);
+            MapFragment fragment = fragmentRef.get();
+            if (fragment != null && bitmapHashMap != null) {
+                fragment.setImageGenResults(viewMap, bitmapHashMap);
+                fragment.setCalloutLayers();
+            }
+        }
     }
 
 
     public void updateMap() {
 
-        setupSources();
-        setupReadingLayers();
-        setupCalloutViews();
+        new LoadPoiDataTask((MapFragment) fragments.get("Map")).execute();
+        //setupSources();
+        //setupReadingLayers();
+        //setupCalloutViews();
 
     }
 
-    public void setupCalloutViews(){
-        HashMap<String, Bitmap> imagesMap = new HashMap<>();
-        LayoutInflater inflater = LayoutInflater.from(App.getContext());
+    public void setCalloutLayers(){
 
-        for (int i = 0; i < 3; i++) {
-            for (Feature feature : featureCollection[i].features()) {
-                View view = inflater.inflate(R.layout.layout_info_window, null);
-
-                String name = feature.getStringProperty(PROPERTY_TITLE);
-                TextView titleTv = view.findViewById(R.id.title);
-                titleTv.setText(name);
-
-                //String type = feature.getStringProperty(PROPERTY_TYPE);
-                //TextView styleTv = view.findViewById(R.id.type);
-                //styleTv.setText(type);
-
-                String verses = feature.getStringProperty(PROPERTY_VERSES);
-                TextView versesTv = view.findViewById(R.id.verses);
-                versesTv.setText(verses);
-
-                Bitmap bitmap = SymbolGeneratorUtil.generate(view);
-                imagesMap.put(name, bitmap);
-                viewMap.put(name, view);
+            for (Integer i = 0; i < 3; i++) {
+                SymbolLayer[] calloutLayer = new SymbolLayer[3];
+                calloutLayer[i] = new SymbolLayer(LAYER_CALLOUTS + i.toString(), LAYER_READING + i.toString());
+                map.addLayer(calloutLayer[i]
+                        .withProperties(
+                                iconImage("{name}"),
+                                iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT),
+                                iconOffset(new Float[]{-20.0f, -10.0f}))
+                        .withFilter(eq(get(PROPERTY_SELECTED), literal(true))));
             }
-        }
-
-        Log.i("MapFragment","Finished creating callout views");
-
-        setImageGenResults(viewMap, imagesMap);
-
-        for (Integer i = 0; i < 3; i++) {
-            SymbolLayer[] calloutLayer = new SymbolLayer[3];
-            calloutLayer[i] = new SymbolLayer(LAYER_CALLOUTS + i.toString(), LAYER_READING + i.toString());
-            map.addLayer(calloutLayer[i]
-                    .withProperties(
-                            iconImage("{name}"),
-                            iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT),
-                            iconOffset(new Float[]{-20.0f, -10.0f}))
-                    .withFilter(eq(get(PROPERTY_SELECTED), literal(true))));
-        }
 
             refreshSource();
 
@@ -286,11 +367,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
 
             }
         });
-    }
-
-    private LatLng convertToLatLng(Feature feature) {
-        Point symbolPoint = (Point) feature.geometry();
-        return new LatLng(symbolPoint.latitude(), symbolPoint.longitude());
     }
 
     private void handleClickIcon(PointF screenPoint) {
@@ -336,36 +412,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
         feature.addBooleanProperty(PROPERTY_SELECTED, true);
     }
 
-    private void handleClickCallout(Feature feature, PointF screenPoint, PointF symbolScreenPoint) {
-        View view = viewMap.get(feature.getStringProperty(PROPERTY_TITLE));
-        //View textContainer = view.findViewById(R.id.text_container);
-
-        // create hitbox for textView
-        Rect hitRectText = new Rect();
-        //textContainer.getHitRect(hitRectText);
-
-        // move hitbox to location of symbol
-        hitRectText.offset((int) symbolScreenPoint.x, (int) symbolScreenPoint.y);
-
-        // offset vertically to match anchor behaviour
-        hitRectText.offset(0, -view.getMeasuredHeight());
-
-        // hit test if clicked point is in textview hitbox
-        if (hitRectText.contains((int) screenPoint.x, (int) screenPoint.y)) {
-            // user clicked on text
-            String callout = feature.getStringProperty("verses");
-            Toast.makeText(getActivity(), callout, Toast.LENGTH_LONG).show();
-        } else {
-            // user clicked on icon
-            List<Feature> featureList = featureCollection[curReading].features();
-            for (int i = 0; i < featureList.size(); i++) {
-                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(feature.getStringProperty(PROPERTY_TITLE))) {
-                    //toggleFavourite(i);
-                }
-            }
-        }
-    }
-
 
     public void setImageGenResults(HashMap<String, View> viewMap, HashMap<String, Bitmap> imageMap) {
         if (map != null) {
@@ -376,17 +422,6 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
         this.viewMap = viewMap;
     }
 
-    private Feature getSelectedFeature() {
-        if (featureCollection[curReading] != null) {
-            for (Feature feature : featureCollection[curReading].features()) {
-                if (feature.getBooleanProperty(PROPERTY_SELECTED)) {
-                    return feature;
-                }
-            }
-        }
-
-        return null;
-    }
 
     public void setupSources(){
         layers = new GeoJsonSource[3];
@@ -580,7 +615,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                     if (results[0] < 3000) { // distance is less than 1 km -> set to zoom level 8
                         cu = CameraUpdateFactory.newLatLngZoom(bounds.getCenter(), 8F);
                     } else {
-                        int padding = 200; // offset from edges of the map in pixels
+                        int padding = 300; // offset from edges of the map in pixels
                         cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);
 
                     }
@@ -720,6 +755,108 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
         mMapView.onCreate(savedInstanceState);
 
     }
+
+
+
+    /*
+    private LatLng convertToLatLng(Feature feature) {
+        Point symbolPoint = (Point) feature.geometry();
+        return new LatLng(symbolPoint.latitude(), symbolPoint.longitude());
+    }
+    */
+
+    /*
+    private void handleClickCallout(Feature feature, PointF screenPoint, PointF symbolScreenPoint) {
+        View view = viewMap.get(feature.getStringProperty(PROPERTY_TITLE));
+        //View textContainer = view.findViewById(R.id.text_container);
+
+        // create hitbox for textView
+        Rect hitRectText = new Rect();
+        //textContainer.getHitRect(hitRectText);
+
+        // move hitbox to location of symbol
+        hitRectText.offset((int) symbolScreenPoint.x, (int) symbolScreenPoint.y);
+
+        // offset vertically to match anchor behaviour
+        hitRectText.offset(0, -view.getMeasuredHeight());
+
+        // hit test if clicked point is in textview hitbox
+        if (hitRectText.contains((int) screenPoint.x, (int) screenPoint.y)) {
+            // user clicked on text
+            String callout = feature.getStringProperty("verses");
+            Toast.makeText(getActivity(), callout, Toast.LENGTH_LONG).show();
+        } else {
+            // user clicked on icon
+            List<Feature> featureList = featureCollection[curReading].features();
+            for (int i = 0; i < featureList.size(); i++) {
+                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(feature.getStringProperty(PROPERTY_TITLE))) {
+                    //toggleFavourite(i);
+                }
+            }
+        }
+    }
+    */
+
+    /*
+    private Feature getSelectedFeature() {
+        if (featureCollection[curReading] != null) {
+            for (Feature feature : featureCollection[curReading].features()) {
+                if (feature.getBooleanProperty(PROPERTY_SELECTED)) {
+                    return feature;
+                }
+            }
+        }
+
+        return null;
+    }
+    */
+
+    /*
+    public void setupCalloutViews(){
+        HashMap<String, Bitmap> imagesMap = new HashMap<>();
+        LayoutInflater inflater = LayoutInflater.from(App.getContext());
+
+        for (int i = 0; i < 3; i++) {
+            for (Feature feature : featureCollection[i].features()) {
+                View view = inflater.inflate(R.layout.layout_info_window, null);
+
+                String name = feature.getStringProperty(PROPERTY_TITLE);
+                TextView titleTv = view.findViewById(R.id.title);
+                titleTv.setText(name);
+
+                //String type = feature.getStringProperty(PROPERTY_TYPE);
+                //TextView styleTv = view.findViewById(R.id.type);
+                //styleTv.setText(type);
+
+                String verses = feature.getStringProperty(PROPERTY_VERSES);
+                TextView versesTv = view.findViewById(R.id.verses);
+                versesTv.setText(verses);
+
+                Bitmap bitmap = SymbolGeneratorUtil.generate(view);
+                imagesMap.put(name, bitmap);
+                viewMap.put(name, view);
+            }
+        }
+
+        Log.i("MapFragment","Finished creating callout views");
+
+        setImageGenResults(viewMap, imagesMap);
+
+        for (Integer i = 0; i < 3; i++) {
+            SymbolLayer[] calloutLayer = new SymbolLayer[3];
+            calloutLayer[i] = new SymbolLayer(LAYER_CALLOUTS + i.toString(), LAYER_READING + i.toString());
+            map.addLayer(calloutLayer[i]
+                    .withProperties(
+                            iconImage("{name}"),
+                            iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT),
+                            iconOffset(new Float[]{-20.0f, -10.0f}))
+                    .withFilter(eq(get(PROPERTY_SELECTED), literal(true))));
+        }
+
+            refreshSource();
+
+    }
+    */
 
     /*
     public void getOfflineMaps() {

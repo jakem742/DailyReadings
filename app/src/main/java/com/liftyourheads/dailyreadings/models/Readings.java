@@ -112,11 +112,11 @@ public class Readings {
         separateNoteFromPoster();      /// SPLIT COMMENTS INTO CONTENT AND POSTER ///
         createCommentArrayList();      /// CREATE ARRAYLIST OF RESULTING COMMENTS ///
 
-        //Retrieve Places for map
-        processPlaces();
+        //Retrieve places from db
+        //processPlaces();
 
         //Convert places into usable format
-        createPlacesJson();
+        //createPlacesJson();
 
     }
 
@@ -325,7 +325,7 @@ public class Readings {
         }
     }
 
-    private void processPlaces() {
+    public void processPlaces() {
 
         // Get list of places by chapter from DB and
         SQLiteDatabase readingsDB = context.openOrCreateDatabase("BiblePlaces.db", 0, null);
@@ -554,7 +554,7 @@ public class Readings {
 
     }
 
-    private void createPlacesJson(){
+    public void createPlacesJson(){
 
         //if(hasPlaces) {
             placeJson = new StringBuilder();
