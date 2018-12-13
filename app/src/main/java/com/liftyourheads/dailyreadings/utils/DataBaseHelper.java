@@ -1,6 +1,7 @@
 package com.liftyourheads.dailyreadings.utils;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -31,6 +32,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private String dbName;
     //private static String DATABASE_NAME = "ESV.db";
     private static String DATABASE_PATH; //= "/data/data/com.liftyourheads.dailyreadings/databases/";
+    private static String DATABASE_DIR; //= "/data/data/com.liftyourheads.dailyreadings/databases/";
     private static String TAG = "Database Helper";
     private static final int DATABASE_VERSION = 1;
     Map<String, Integer> DATABASE_VERSIONS;
@@ -52,7 +54,12 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             put("CommandmentsOfChrist", 2);
         }};
 
-        DATABASE_PATH = myContext.getDatabasePath(dbName).getPath() + ".db";
+        DATABASE_DIR = myContext.getDatabasePath(dbName).getPath();
+        DATABASE_PATH = DATABASE_DIR + ".db";
+        //DATABASE_PATH = "/data/data/com.liftyourheads.dailyreadings/databases/" + dbName + ".db";
+        Log.i(TAG,DATABASE_PATH);
+        DATABASE_DIR = DATABASE_DIR.substring(0,DATABASE_DIR.lastIndexOf("/")) + "/";
+        Log.i(TAG,DATABASE_DIR);
 
 
     }
@@ -128,8 +135,16 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     {
 
         try {
-            InputStream mInput = myContext.getAssets().open("databases/" + dbName + ".db");
+            AssetManager am = myContext.getAssets();
+            InputStream mInput = am.open("databases/" + dbName + ".db");
             String outFileName = DATABASE_PATH;
+
+            File databaseFile = new File(outFileName);
+            if (!databaseFile.exists()){ //Ensure file exists!
+                File databaseDir = new File(DATABASE_DIR);
+                databaseDir.mkdir();
+            }
+
             OutputStream mOutput = new FileOutputStream(outFileName);
             byte[] mBuffer = new byte[2024];
             int mLength;
@@ -162,7 +177,9 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     public void openDatabase() throws SQLException
     {
         String myPath = DATABASE_PATH;
-        myDataBase = SQLiteDatabase.openDatabase(myPath, null, SQLiteDatabase.OPEN_READWRITE);
+        myDataBase = SQLiteDatabase.openDatabase(myPath, null,SQLiteDatabase.OPEN_READWRITE);
+        //myDataBase = SQLiteDatabase.openOrCreateDatabase(myPath, null,null);
+
     }
 
     public synchronized void closeDataBase()throws SQLException
