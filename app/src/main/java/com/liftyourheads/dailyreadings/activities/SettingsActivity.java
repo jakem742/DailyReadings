@@ -36,6 +36,9 @@ import java.util.List;
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
 
+    Integer curDay;
+    Integer curMonth;
+
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -122,6 +125,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupActionBar();
+        curDay = getIntent().getIntExtra("curDay",0);
+        curMonth = getIntent().getIntExtra("curMonth",0);
         addPreferencesFromResource(R.xml.pref_reading);
 
         // Bind the summaries of EditText/List/Dialog/Ringtone preferences
@@ -147,7 +152,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-            startActivity(new Intent(this, MainActivity.class));
+            Bundle bundle = new Bundle();
+            bundle.putInt("curDay",curDay);
+            bundle.putInt("curMonth",curMonth);
+            bundle.putString("fromActivity","SettingsActivity");
+
+            startActivity(new Intent(this, MainActivity.class),bundle);
             return true;
         }
         return super.onOptionsItemSelected(item);

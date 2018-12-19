@@ -33,6 +33,9 @@ import java.util.Random;
 import java.util.TimeZone;
 
 import static android.content.Context.MODE_PRIVATE;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curCalendar;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curDay;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curMonth;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.curReading;
 import static com.liftyourheads.dailyreadings.activities.MainActivity.reading;
 
@@ -44,12 +47,15 @@ public class HomeFragment extends Fragment {
 
     ConstraintLayout commandment_constraint_layout;
     ImageButton settings;
+    ImageButton date_button;
     public HashMap<String,String> quote;
     Calendar readingCalendar;
     TextView date_tv;
     private static final String QUOTES_DB = "CommandmentsOfChrist";
     private static final String QUOTES_TABLE = "Commandments_Of_Christ";
     private static String TAG = "Home Fragment";
+
+    static DatePickerDialog curDatePickerDialog;
 
     private OnFragmentInteractionListener mListener;
 
@@ -77,18 +83,16 @@ public class HomeFragment extends Fragment {
 
         commandment_constraint_layout = view.findViewById(R.id.commandment_constraint_layout);
         settings = view.findViewById(R.id.settings_button);
-        this.readingCalendar  = Calendar.getInstance();
         date_tv = view.findViewById(R.id.date_textView);
+        date_button = view.findViewById(R.id.date_button);
 
         readingNamesRecyclerView = view.findViewById(R.id.reading_title_recycler);
-
 
         updateTitlesRecyclerView();
 
         updateQuotesView();
 
-        GregorianCalendar cal = new GregorianCalendar(TimeZone.getDefault());
-        setDateText(cal);
+        setDateText(curCalendar);
 
         initialiseListeners();
 
@@ -131,8 +135,29 @@ public class HomeFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 Intent settingsIntent = new Intent(view.getContext(), SettingsActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putInt("curDay",curDay);
+                bundle.putInt("curMonth",curMonth);
 
-                startActivity(settingsIntent);
+                startActivity(settingsIntent,bundle);
+            }
+        });
+
+        date_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                GregorianCalendar today = new GregorianCalendar(TimeZone.getDefault());
+
+                int monthOfYear = today.get(Calendar.MONTH);
+                int dayOfMonth = today.get(Calendar.DAY_OF_MONTH);
+
+                curCalendar = today;
+                curDatePickerDialog.updateDate(today.get(Calendar.YEAR),monthOfYear,dayOfMonth);
+
+                setDateText(today);
+
+                updateEverything(monthOfYear,dayOfMonth);
+
             }
         });
 
@@ -142,42 +167,29 @@ public class HomeFragment extends Fragment {
             public void onDateSet(DatePicker view, int year, int monthOfYear,
                                   int dayOfMonth) {
                 // TODO Auto-generated method stub
-                readingCalendar.set(Calendar.YEAR, year);
-                readingCalendar.set(Calendar.MONTH, monthOfYear);
-                readingCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                curCalendar.set(Calendar.YEAR, year);
+                curCalendar.set(Calendar.MONTH, monthOfYear);
+                curCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                curDatePickerDialog.updateDate(year,monthOfYear,dayOfMonth);
 
-                setDateText(readingCalendar);
+                setDateText(curCalendar);
 
-                MainActivity.setActivityRecreated(dayOfMonth,monthOfYear);
-                MainActivity.getCurrentDate();
-                MainActivity.initialiseReadings(getContext());
-                MainActivity.updateTabNames(getContext());
-                updateTitlesRecyclerView();
-                MainActivity.mapFragment.updateMap();
-
-                ReadingFragment readingFragment = (ReadingFragment) MainActivity.fragments.get("Reading " + Integer.toString(curReading));
-                CommentsFragment commentsFragment = (CommentsFragment) MainActivity.fragments.get("Comments " + Integer.toString(curReading));
-
-                readingFragment.setBibleListContent();
-                commentsFragment.updateNotesListView();
-                //MainActivity.recreateActivity(getActivity(),monthOfYear,dayOfMonth);
-                //MainActivity.initialiseReadings(view.getContext(),dayOfMonth,monthOfYear);
-                //MainActivity.initialiseTabs();
-                //MainActivity.generateReadingFragments();
+                updateEverything(monthOfYear,dayOfMonth);
 
             }
         };
+
+        curDatePickerDialog = new DatePickerDialog(getContext(),
+                date,
+                curCalendar.get(Calendar.YEAR),
+                curCalendar.get(Calendar.MONTH),
+                curCalendar.get(Calendar.DAY_OF_MONTH));
 
         View.OnClickListener dateSelector = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.i(TAG,"Date change listener activated");
-                new DatePickerDialog(getContext(),
-                        date,
-                        readingCalendar.get(Calendar.YEAR),
-                        readingCalendar.get(Calendar.MONTH),
-                        readingCalendar.get(Calendar.DAY_OF_MONTH))
-                        .show();
+                curDatePickerDialog.show();
             }
         };
 
@@ -189,6 +201,23 @@ public class HomeFragment extends Fragment {
                 MainActivity.showDialogFragment(quote.get("Quote"),quote.get("References"));
             }
         });
+
+    }
+
+    private void updateEverything(int monthOfYear, int dayOfMonth){
+
+        MainActivity.setActivityRecreated(dayOfMonth,monthOfYear);
+        MainActivity.getCurrentDate();
+        MainActivity.initialiseReadings(getContext());
+        MainActivity.updateTabNames(getContext());
+        updateTitlesRecyclerView();
+        MainActivity.mapFragment.updateMap();
+
+        ReadingFragment readingFragment = (ReadingFragment) MainActivity.fragments.get("Reading " + Integer.toString(curReading));
+        CommentsFragment commentsFragment = (CommentsFragment) MainActivity.fragments.get("Comments " + Integer.toString(curReading));
+
+        readingFragment.setBibleListContent();
+        commentsFragment.updateNotesListView();
 
     }
 

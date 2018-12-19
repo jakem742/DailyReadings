@@ -50,16 +50,14 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             put("KJV", 1);
             put("NET", 1);
             put("BiblePlaces", 1);
-            put("DailyReadings", 1);
+            put("DailyReadings", 2);
             put("CommandmentsOfChrist", 2);
         }};
 
         DATABASE_DIR = myContext.getDatabasePath(dbName).getPath();
         DATABASE_PATH = DATABASE_DIR + ".db";
         //DATABASE_PATH = "/data/data/com.liftyourheads.dailyreadings/databases/" + dbName + ".db";
-        Log.i(TAG,DATABASE_PATH);
         DATABASE_DIR = DATABASE_DIR.substring(0,DATABASE_DIR.lastIndexOf("/")) + "/";
-        Log.i(TAG,DATABASE_DIR);
 
 
     }

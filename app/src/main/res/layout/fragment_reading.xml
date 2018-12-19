@@ -48,6 +48,7 @@
                     android:layout_height="wrap_content"
                     android:lineSpacingMultiplier="1.8"
                     android:text="FILL"
+                    android:textIsSelectable="true"
                     android:textSize="16sp" />
         </android.support.v4.widget.NestedScrollView>
 

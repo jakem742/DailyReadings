@@ -63,6 +63,7 @@ import android.widget.Toast;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -283,25 +284,34 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
             if (fragment != null) {
                 for (FeatureCollection collection : params) {
 
-                    for (Feature feature : collection.features()) {
-                        View view = LayoutInflater.from(fragment.getContext()).inflate(R.layout.layout_info_window, null);
+                    List<Feature> features = collection.features();
 
-                        String name = feature.getStringProperty(PROPERTY_TITLE);
-                        TextView titleTv = view.findViewById(R.id.title);
-                        titleTv.setText(name);
+                    if ( features.size() > 0 ) {
 
-                        //String type = feature.getStringProperty(PROPERTY_TYPE);
-                        //TextView styleTv = view.findViewById(R.id.type);
-                        //styleTv.setText(type);
+                        for (Feature feature : features) {
 
-                        String verses = feature.getStringProperty(PROPERTY_VERSES);
-                        TextView versesTv = view.findViewById(R.id.verses);
-                        versesTv.setText(verses);
+                            View view = LayoutInflater.from(fragment.getContext()).inflate(R.layout.layout_info_window, null);
 
-                        Bitmap bitmap = SymbolGeneratorUtil.generate(view);
-                        imagesMap.put(name, bitmap);
-                        viewMap.put(name, view);
-                    }
+                            String name = feature.getStringProperty(PROPERTY_TITLE);
+                            TextView titleTv = view.findViewById(R.id.title);
+                            titleTv.setText(name);
+
+                            //String type = feature.getStringProperty(PROPERTY_TYPE);
+                            //TextView styleTv = view.findViewById(R.id.type);
+                            //styleTv.setText(type);
+
+                            String verses = feature.getStringProperty(PROPERTY_VERSES);
+                            TextView versesTv = view.findViewById(R.id.verses);
+                            versesTv.setText(verses);
+
+                            Bitmap bitmap = SymbolGeneratorUtil.generate(view);
+                            imagesMap.put(name, bitmap);
+                            viewMap.put(name, view);
+
+                        }
+
+                    } else Log.i("Map Fragment","No features found");
+
                 }
 
             } else {

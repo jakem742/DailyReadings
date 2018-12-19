@@ -73,10 +73,13 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     public static Integer curReading = 0;
     private static Integer prevPage = 0;
 
+    private static Boolean readingResume = false;
+    private static Bundle resumeBundle;
     public static int curMonth;
     public static int curDay;
     public static int selectedMonth = 0;
     public static int selectedDay = 0;
+    public static GregorianCalendar curCalendar;
 
     public static MapFragment mapFragment;
 
@@ -116,6 +119,17 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
         fragmentManager = getSupportFragmentManager();
         mainViewPager.setOffscreenPageLimit(3);
+
+        curCalendar = new GregorianCalendar(TimeZone.getDefault());
+
+        String fromActivity = getIntent().getStringExtra("fromActivity");
+
+        if ( fromActivity != null && fromActivity.equals("SettingsActivity") ) {
+
+            readingResume = true;
+            resumeBundle = getIntent().getExtras();
+
+        }
 
         //Determine the current date
         getCurrentDate();
@@ -397,20 +411,31 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
         //// GET CURRENT DATE INFO ////
 
+        GregorianCalendar todayCal = new GregorianCalendar(TimeZone.getDefault());
+
         if (isActivityRecreated){
             //retrieve the stored date
 
             curMonth = selectedMonth;
             curDay = selectedDay;
 
+
+        } else if (readingResume) {
+
+            curDay = resumeBundle.getInt("curDay");
+            curMonth = resumeBundle.getInt("curMonth");
+
+
         } else {
             //Get today's date
 
-            GregorianCalendar cal = new GregorianCalendar(TimeZone.getDefault());
-
-            curMonth = cal.get(Calendar.MONTH);
-            curDay = cal.get(Calendar.DAY_OF_MONTH);
+            curMonth = todayCal.get(Calendar.MONTH);
+            curDay = todayCal.get(Calendar.DAY_OF_MONTH);
         }
+
+        curCalendar.set(todayCal.get(Calendar.YEAR),curMonth,curDay);
+
+
     }
 
     @Override
