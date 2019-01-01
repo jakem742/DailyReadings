@@ -57,6 +57,9 @@ import java.util.Stack;
 import java.util.TimeZone;
 import java.util.prefs.Preferences;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
+
 public class MainActivity extends AppCompatActivity implements HomeFragment.OnFragmentInteractionListener,
         ReadingFragment.OnFragmentInteractionListener,
         MapFragment.OnFragmentInteractionListener {
@@ -108,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
 
         appContainer = findViewById(R.id.appContainer);

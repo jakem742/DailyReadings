@@ -411,7 +411,20 @@ public class Readings {
                                     }
                                             //{placeName, placeLat, placeLong};
                                     //Log.i(TAG, "Place Info: " + Arrays.toString(placeData));
-                                    places.add(placeData);
+                                    if ( !placeLat.equals("") && !placeLong.equals("")) {
+                                        try {
+                                            Double latitude = Double.parseDouble(placeLat);
+                                            Double longitude = Double.parseDouble(placeLong);
+
+                                            if (Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180) //Make sure coordinates are legit!
+                                                places.add(placeData);
+                                            else //Bad coordinates retrieved
+                                                Log.i(TAG, "Unable to find coordinates. Lat = " + Double.toString(latitude) + ", Long = " + Double.toString(longitude));
+                                        } catch (Exception e) {
+                                            Log.i(TAG, "Unable to process lat & long values!");
+                                            e.printStackTrace();
+                                        }
+                                    } else Log.i(TAG,"Coordinates are blank for " + placeName + "!"); //Blank coordinates field
 
                                 } while (placesCursor.moveToNext());
 
@@ -562,19 +575,21 @@ public class Readings {
 
             for (Map place : places) {
 
-                placeJson.append("{\"type\": \"Feature\",\"properties\": {\"name\": \"")
-                        .append(place.get("name"))
-                        .append("\",\"selected\": false, \"verses\": \"")
-                        .append(place.get("verses"))
-                        .append("\", \"type\":")
-                        .append(place.get("type"))
-                        .append("},\"geometry\": {\"type\": \"Point\",\"coordinates\": [")
-                        .append(place.get("longitude"))
-                        .append(",")
-                        .append(place.get("latitude"))
-                        .append("]}}");
+                if( ( place.get("longitude") != null ) && ( place.get("latitude") != null ) ) {
+                    placeJson.append("{\"type\": \"Feature\",\"properties\": {\"name\": \"")
+                            .append(place.get("name"))
+                            .append("\",\"selected\": false, \"verses\": \"")
+                            .append(place.get("verses"))
+                            .append("\", \"type\":\"")
+                            .append(place.get("type"))
+                            .append("\"},\"geometry\": {\"type\": \"Point\",\"coordinates\": [")
+                            .append(place.get("longitude"))
+                            .append(",")
+                            .append(place.get("latitude"))
+                            .append("]}}");
 
-                if (places.get(places.size()-1) != place ) placeJson.append(",");
+                    if (places.get(places.size()-1) != place ) placeJson.append(",");
+                }
             }
 
             placeJson.append("]}");

@@ -1,26 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.liftyourheads.dailyreadings">
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:name=".App"
         android:theme="@style/AppTheme">
-        <!--android:roundIcon="@mipmap/ic_launcher_round"-->
+
+        <!-- android:roundIcon="@mipmap/ic_launcher_round" -->
         <activity
             android:name=".activities.MainActivity"
-            android:label="@string/app_name"
-            android:configChanges="orientation|screenSize" >
+            android:configChanges="orientation|screenSize"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
 
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -36,7 +39,6 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/commandments_widget_info" />
         </receiver>
-
         <receiver
             android:name=".widgets.ReadingsWidgetProvider"
             android:label="@string/title_readings_widget">
@@ -52,8 +54,13 @@
         <activity
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings"
-            android:theme="@style/SettingsTheme"></activity>
+            android:theme="@style/SettingsTheme" />
+        <activity android:name=".activities.LearningActivity"/>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="744208051164a22c02684d05ede38168f4e11e53"
+            />
+
     </application>
-
-
 </manifest>
