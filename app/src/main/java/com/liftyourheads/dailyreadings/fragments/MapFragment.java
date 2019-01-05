@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.crashlytics.android.Crashlytics;
 import com.liftyourheads.dailyreadings.App;
 import com.liftyourheads.dailyreadings.R;
 import com.liftyourheads.dailyreadings.activities.MainActivity;
@@ -230,6 +231,7 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
                 return null;
             }
             for (int i = 0; i < 3; i++) {
+                Crashlytics.log(Log.DEBUG,"Processing Places in Background","Processing reading data for reading " + Integer.toString(i));
                 reading[i].processPlaces();
                 reading[i].createPlacesJson();
             }
@@ -346,6 +348,9 @@ public class MapFragment extends Fragment implements View.OnTouchListener {
             for (Integer i = 0; i < 3; i++) {
                 SymbolLayer[] calloutLayer = new SymbolLayer[3];
                 calloutLayer[i] = new SymbolLayer(LAYER_CALLOUTS + i.toString(), LAYER_READING + i.toString());
+
+                if (map.getLayer(LAYER_CALLOUTS + i.toString()) != null) map.removeLayer(LAYER_CALLOUTS + i.toString()); //Remove existing layers to prevent crash
+
                 map.addLayer(calloutLayer[i]
                         .withProperties(
                                 iconImage("{name}"),

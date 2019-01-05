@@ -598,10 +598,14 @@ public class Readings {
     }
 
     public String getPlacesAsString(){
-        Log.i(TAG,placeJson.toString());
-        //if (hasPlaces)
-        return placeJson.toString();
-        //else return null;
+        if (placeJson != null) {
+            Log.i(TAG, placeJson.toString());
+            //if (hasPlaces)
+            return placeJson.toString();
+            //else return null;
+        }
+
+        return null;
 
     }
 

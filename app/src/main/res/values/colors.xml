@@ -4,18 +4,18 @@
     <color name="colorPrimaryDark">#889f6c</color>
     <color name="colorAccent">#657650</color>
     <color name="colourBodyText">#c6212121</color>
-    <color name="colourBodyTextLight">#FFFAFAFA</color>
+    <color name="colourBodyTextLight">#fafafa</color>
     <color name="colourBodyTextNight">#b0bec5</color>
     <color name="colourRefText">#b71c1c</color>
     <color name="colourRefMapText">#be4848</color>
 
     <!-- OLD APP COLOURS-->
     <color name="colorDark">#c6212121</color>
-    <color name="colorLight">#FFFAFAFA</color>
+    <color name="colorLight">#fafafa</color>
     <color name="colorDarkTransparent">#DC212121</color>
     <color name="colorDarkSecondary">#353535</color>
-    <color name="colorLightBackground">#F5F5F5</color>
-    <color name="colorLightSecondary">#E0E0E0</color>
+    <color name="colorLightBackground">#f5f5f5</color>
+    <color name="colorLightSecondary">#e0e0e0</color>
     <color name="colorOverlayTransparent">#E5212121</color>
     <color name="colour_divider">#dadada</color>
     <color name="colourDivider">@color/colour_divider</color>

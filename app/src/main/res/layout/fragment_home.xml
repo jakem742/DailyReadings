@@ -84,17 +84,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginLeft="@dimen/margin_sides_home_item"
-                android:layout_marginTop="64dp"
+                android:layout_marginTop="32dp"
                 android:layout_marginRight="@dimen/margin_sides_home_item"
                 android:layout_marginBottom="@dimen/margin_below_home_item"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                tools:itemCount="3"
+                tools:listitem="@layout/recyclerview_reading_name" />
+
 
             <include
                 layout="@layout/layout_commandment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/margin_sides_home_item"
+                android:layout_marginTop="24dp"
+                android:layout_marginRight="@dimen/margin_sides_home_item"
+                android:layout_marginBottom="@dimen/margin_below_home_item" />
+
+            <include
+                layout="@layout/layout_learning_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right|end"
                 android:layout_marginLeft="@dimen/margin_sides_home_item"
                 android:layout_marginTop="24dp"
                 android:layout_marginRight="@dimen/margin_sides_home_item"

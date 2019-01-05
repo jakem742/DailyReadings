@@ -12,6 +12,7 @@
     <string name="mapbox_style_custom_bible">mapbox://styles/jakemadden/cjo3z4v16dju92so6jswmuffb</string>
     <string name="title_commandment_widget">Commandments Of Christ</string>
     <string name="title_readings_widget">Daily Readings</string>
+    <string name="title_learning">Learn the Basics</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Strings related to Settings -->
@@ -103,6 +104,9 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 
 </resources>

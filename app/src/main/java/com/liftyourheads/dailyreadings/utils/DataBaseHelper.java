@@ -50,6 +50,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             put("KJV", 1);
             put("NET", 1);
             put("BiblePlaces", 1);
+            put("LearningContent", 1);
             put("DailyReadings", 2);
             put("CommandmentsOfChrist", 2);
         }};

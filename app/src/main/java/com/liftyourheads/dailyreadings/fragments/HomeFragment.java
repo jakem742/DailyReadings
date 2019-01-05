@@ -1,5 +1,7 @@
 package com.liftyourheads.dailyreadings.fragments;
+import com.crashlytics.android.Crashlytics;
 import com.liftyourheads.dailyreadings.R;
+import com.liftyourheads.dailyreadings.activities.LearningHeaderActivity;
 import com.liftyourheads.dailyreadings.activities.MainActivity;
 import com.liftyourheads.dailyreadings.activities.SettingsActivity;
 import com.liftyourheads.dailyreadings.adapters.ReadingSummaryRecyclerViewAdapter;
@@ -28,7 +30,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -46,6 +47,7 @@ public class HomeFragment extends Fragment {
     RecyclerView readingNamesRecyclerView;
 
     ConstraintLayout commandment_constraint_layout;
+    ConstraintLayout learning_constraint_layout;
     ImageButton settings;
     ImageButton date_button;
     public HashMap<String,String> quote;
@@ -82,6 +84,7 @@ public class HomeFragment extends Fragment {
         if (view == null) view = inflater.inflate(R.layout.fragment_home, container, false);
 
         commandment_constraint_layout = view.findViewById(R.id.commandment_constraint_layout);
+        learning_constraint_layout = view.findViewById(R.id.learning_constraint_layout);
         settings = view.findViewById(R.id.settings_button);
         date_tv = view.findViewById(R.id.date_textView);
         date_button = view.findViewById(R.id.date_button);
@@ -101,13 +104,12 @@ public class HomeFragment extends Fragment {
     }
 
     public void updateQuotesView(){
-        TextView title_commandment_textview = view.findViewById(R.id.title_commandment_textview);
+        TextView title_commandment_textview = view.findViewById(R.id.title_learning_textview);
         TextView body_commandment_textview = view.findViewById(R.id.body_commandment_textview);
         TextView ref_commandment_textview = view.findViewById(R.id.ref_commandment_textview);
 
-            Log.i(TAG,"Processing quote " + Integer.toString(4));
-            getQuote();
-            MainActivity.initialiseDialogFragment(getContext(), quote.get("References"));
+        getQuote();
+        MainActivity.initialiseDialogFragment(getContext(), quote.get("References"));
 
         title_commandment_textview.setText(quote.get("Title"));
         body_commandment_textview.setText(quote.get("Quote"));
@@ -134,6 +136,7 @@ public class HomeFragment extends Fragment {
         settings.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
+                Crashlytics.log(Log.DEBUG,TAG,"Settings Button Pressed");
                 Intent settingsIntent = new Intent(view.getContext(), SettingsActivity.class);
                 Bundle bundle = new Bundle();
                 bundle.putInt("curDay",curDay);
@@ -148,11 +151,12 @@ public class HomeFragment extends Fragment {
             public void onClick(View view) {
                 GregorianCalendar today = new GregorianCalendar(TimeZone.getDefault());
 
+                int year = today.get(Calendar.YEAR);
                 int monthOfYear = today.get(Calendar.MONTH);
                 int dayOfMonth = today.get(Calendar.DAY_OF_MONTH);
 
                 curCalendar = today;
-                curDatePickerDialog.updateDate(today.get(Calendar.YEAR),monthOfYear,dayOfMonth);
+                curDatePickerDialog.updateDate(year,monthOfYear,dayOfMonth);
 
                 setDateText(today);
 
@@ -166,6 +170,9 @@ public class HomeFragment extends Fragment {
             @Override
             public void onDateSet(DatePicker view, int year, int monthOfYear,
                                   int dayOfMonth) {
+
+                Crashlytics.log(Log.DEBUG, TAG, "New Date Selected: Month = " + Integer.toString(monthOfYear) + ", Day = " + Integer.toString(dayOfMonth));
+
                 // TODO Auto-generated method stub
                 curCalendar.set(Calendar.YEAR, year);
                 curCalendar.set(Calendar.MONTH, monthOfYear);
@@ -200,6 +207,18 @@ public class HomeFragment extends Fragment {
             public void onClick(View view) {
                 MainActivity.showDialogFragment(quote.get("Quote"),quote.get("References"));
             }
+        });
+
+        learning_constraint_layout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Crashlytics.log(Log.DEBUG,TAG,"Learning Button Pressed");
+                Intent settingsIntent = new Intent(view.getContext(), LearningHeaderActivity.class);
+                startActivity(settingsIntent);
+
+            }
+
         });
 
     }
@@ -243,6 +262,9 @@ public class HomeFragment extends Fragment {
 
         Random rand = new Random();
         int num = rand.nextInt(quotes.getCount());
+
+        Crashlytics.log(Log.DEBUG,TAG,"Processing quote #" + Integer.toString(num));
+
 
         //Log.i("Random number chosen",Integer.toString(num));
         quotes.moveToPosition(num);

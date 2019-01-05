@@ -3,6 +3,7 @@ package com.liftyourheads.dailyreadings.activities;
 import android.Manifest;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -34,6 +35,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.liftyourheads.dailyreadings.R;
 import com.liftyourheads.dailyreadings.adapters.ReadingSummaryRecyclerViewAdapter;
 import com.liftyourheads.dailyreadings.adapters.ReferencesRecyclerViewAdapter;
@@ -60,6 +62,8 @@ import java.util.prefs.Preferences;
 import com.crashlytics.android.Crashlytics;
 import io.fabric.sdk.android.Fabric;
 
+import static com.liftyourheads.dailyreadings.App.getContext;
+
 public class MainActivity extends AppCompatActivity implements HomeFragment.OnFragmentInteractionListener,
         ReadingFragment.OnFragmentInteractionListener,
         MapFragment.OnFragmentInteractionListener {
@@ -68,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     public static final String[] BIBLE_ABBR = {"Gen", "Ex", "Lev", "Num", "Deut", "Josh", "Judg", "Ruth", "1 Sam", "2 Sam", "1 Kgs", "2 Kgs", "1 Chr", "2 Chr", "Ezra", "Neh", "Est", "Job", "Ps", "Pro", "Eccl", "Sng", "Isa", "Jer", "Lam", "Ezek", "Dan", "Hos", "Joel", "Amos", "Obad", "Jonah", "Mic", "Nahum", "Hab", "Zeph", "Hag", "Zech", "Mal", "Matt", "Mark", "Luke", "John", "Acts", "Rom", "1 Cor", "2 Cor", "Gal", "Eph", "Phil", "Col", "1 Thes", "2 Thes", "1 Tim", "2 Tim", "Titus", "Phm", "Heb", "James", "1 Pet", "2 Pet", "1 Jn", "2 Jn", "3 Jn", "Jude", "Rev"};
     public static final String[] MONTHS = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"};
     public static final String[] TRANSLATIONS = {"KJV", "ESV", "NET"};
-    public static final String[] DATABASES = {"CommandmentsOfChrist","DailyReadings","BiblePlaces"};
+    public static final String[] DATABASES = {"CommandmentsOfChrist","DailyReadings","BiblePlaces","LearningContent"};
 
     public static final String TAG = "Main Activity";
 
@@ -107,11 +111,15 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     /** true if this activity is recreated. */
     private static boolean isActivityRecreated = false;
 
+    public static FirebaseAnalytics mFirebaseAnalytics;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Fabric.with(this, new Crashlytics());
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         setContentView(R.layout.activity_main);
 
         appContainer = findViewById(R.id.appContainer);
@@ -378,6 +386,9 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
             @Override
             public void onPageSelected(int position) {
+                Crashlytics.log(Log.DEBUG, TAG, "Main Viewpager Page Selected : " + Integer.toString(position));
+
+
                 navBar.getMenu().getItem(position).setChecked(true);
                 updateBackStack(position);
 
@@ -447,17 +458,34 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
     public static void onReadingClick(View view, int position) {
 
-        Log.i("On RecyclerView Clicked","Selected reading " + Integer.toString(position));
+        Crashlytics.log(Log.DEBUG, TAG, "Home Fragment: Clicked Reading " + Integer.toString(position));
 
-        TabLayout tabs = ((MainActivity)view.getContext()).findViewById(R.id.reading_tab_layout);
+        //Log.i("On RecyclerView Clicked","Selected reading " + Integer.toString(position));
+
 
         //updateReadingNum(position);
         mainViewPager.setCurrentItem(1);
-        tabs.getTabAt(position).select();
 
+        try {
+            MainActivity mainActivity = getActivity();
+            TabLayout tabs = mainActivity.findViewById(R.id.reading_tab_layout);
+            tabs.getTabAt(position).select();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
+    private static MainActivity getActivity() {
+        Context context = getContext();
+        while (context instanceof ContextWrapper) {
+            if (context instanceof MainActivity) {
+                return (MainActivity)context;
+            }
+            context = ((ContextWrapper)context).getBaseContext();
+        }
+        return null;
+    }
 
     public static class MainViewPagerAdapter extends FragmentStatePagerAdapter {
         private static int NUM_ITEMS = 4;
@@ -513,6 +541,8 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
 
         if (curReading != readingNumber) {
 
+            Crashlytics.log(Log.DEBUG, TAG, "Updating reading to reading " + Integer.toString(readingNumber));
+
             mapFragment.setCurrentLayer(readingNumber);
             mapFragment.zoomExtents(readingNumber);
 
@@ -533,12 +563,15 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
             trans.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
             trans.addToBackStack(null);
             trans.commit();
+            Crashlytics.log(Log.DEBUG, TAG, "Finished changing readings");
         } else {
 
             mapFragment.zoomExtents(readingNumber);
+            Crashlytics.log(Log.DEBUG, TAG, "Clicked on current reading!");
 
             Log.i(TAG,"Clicked on current reading!");
         }
+
 
     }
 

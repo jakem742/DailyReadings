@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.liftyourheads.dailyreadings">
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -55,12 +56,15 @@
             android:name=".activities.SettingsActivity"
             android:label="@string/title_activity_settings"
             android:theme="@style/SettingsTheme" />
-        <activity android:name=".activities.LearningActivity"/>
+        <activity
+            android:name=".activities.LearningHeaderActivity"
+            android:screenOrientation="portrait" />
 
         <meta-data
             android:name="io.fabric.ApiKey"
-            android:value="744208051164a22c02684d05ede38168f4e11e53"
-            />
+            android:value="744208051164a22c02684d05ede38168f4e11e53" />
 
+        <activity android:name=".activities.LearningItemActivity"></activity>
     </application>
+
 </manifest>

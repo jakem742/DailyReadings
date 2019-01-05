@@ -2,15 +2,15 @@
 
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/commandment_constraint_layout"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/commandment_constraint_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/rounded_corner_light"
     android:paddingBottom="24dp">
 
     <TextView
-        android:id="@+id/title_commandment_textview"
+        android:id="@+id/title_learning_textview"
         android:layout_width="0dp"
         android:layout_height="35dp"
         android:layout_marginStart="8dp"
@@ -44,7 +44,7 @@
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/title_commandment_textview" />
+        app:layout_constraintTop_toBottomOf="@+id/title_learning_textview" />
 
     <TextView
         android:id="@+id/ref_commandment_textview"
