@@ -7,6 +7,23 @@
     android:background="@color/colorPrimary"
     tools:context=".activities.LearningHeaderActivity">
 
+    <Button
+        android:id="@+id/learning_item_back_button"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:background="@drawable/rounded_corner_light"
+        android:elevation="25dp"
+        android:gravity="center"
+        android:text="&lt;"
+        android:textColor="@color/colourBodyText"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/subject_header_textView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/subject_header_textView" />
+
     <TextView
         android:id="@+id/subject_header_textView"
         android:layout_width="wrap_content"
@@ -29,8 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="@color/colorLightSecondary"
-        android:paddingTop="4dp"
+        android:paddingTop="6dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/subject_header_textView"

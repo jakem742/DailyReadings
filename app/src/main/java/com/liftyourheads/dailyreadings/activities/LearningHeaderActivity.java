@@ -1,5 +1,6 @@
 package com.liftyourheads.dailyreadings.activities;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AppCompatActivity;
@@ -7,6 +8,7 @@ import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.widget.Button;
 
 import com.crashlytics.android.Crashlytics;
 import com.liftyourheads.dailyreadings.R;
@@ -30,6 +32,15 @@ public class LearningHeaderActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_learning_header);
+
+
+        Button back_button = findViewById(R.id.learning_header_back_button);
+        back_button.setOnClickListener(view -> {
+
+            Crashlytics.log(Log.DEBUG,TAG,"Learning Header Back Button Selected");
+            Intent mainIntent = new Intent(view.getContext(), MainActivity.class);
+            view.getContext().startActivity(mainIntent);
+        });
 
         getLearningContent();
         updateHeaderListView();

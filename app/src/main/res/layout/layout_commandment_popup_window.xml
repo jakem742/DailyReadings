@@ -7,18 +7,19 @@
     android:background="@android:color/black">
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/quoteLinearLayout"
-    android:orientation="vertical"
-    android:background="@drawable/rounded_corner_light"
-    android:layout_marginEnd="30dp"
-    android:layout_marginRight="30dp"
-    android:layout_marginStart="30dp"
-    android:layout_marginLeft="30dp"
-    android:layout_marginTop="60dp"
-    android:layout_marginBottom="60dp"
-    android:layout_centerInParent="true"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+        android:id="@+id/quoteLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="30dp"
+        android:layout_marginLeft="30dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginBottom="60dp"
+        android:background="@drawable/rounded_corner_light"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/quote_tv"
@@ -45,14 +46,14 @@
 
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_margin="20dp"
+            android:scrollbars="none">
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/references_recyclerview"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:layout_margin="20dp" />
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/references_recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
         </ScrollView>
 

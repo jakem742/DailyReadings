@@ -1,18 +1,27 @@
 package com.liftyourheads.dailyreadings.adapters;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.crashlytics.android.Crashlytics;
 import com.liftyourheads.dailyreadings.R;
+import com.liftyourheads.dailyreadings.activities.LearningItemActivity;
+import com.liftyourheads.dailyreadings.activities.SettingsActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curDay;
+import static com.liftyourheads.dailyreadings.activities.MainActivity.curMonth;
 
 public class LearningHeaderRecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -85,7 +94,21 @@ public class LearningHeaderRecyclerViewAdapter extends RecyclerView.Adapter<Recy
         @Override
         public void onClick(View view) {
             if (mClickListener != null) mClickListener.onItemClick(view, getAdapterPosition());
-            Toast.makeText(view.getContext(), headers.get(getAdapterPosition()).get("Title"), Toast.LENGTH_SHORT).show();
+
+            String title = headers.get(getAdapterPosition()).get("Title");
+            String ID = headers.get(getAdapterPosition()).get("ID");
+
+
+            Crashlytics.log(Log.DEBUG,TAG,"Learning Header Selected: " + title);
+            Intent itemsIntent = new Intent(view.getContext(), LearningItemActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString("Title",title);
+            bundle.putString("ID",ID);
+
+            itemsIntent.putExtras(bundle);
+
+
+            view.getContext().startActivity(itemsIntent);
 
         }
     }

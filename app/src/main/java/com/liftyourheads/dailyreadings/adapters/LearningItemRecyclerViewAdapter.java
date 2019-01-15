@@ -6,10 +6,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.liftyourheads.dailyreadings.R;
+import com.liftyourheads.dailyreadings.activities.MainActivity;
+import com.liftyourheads.dailyreadings.fragments.LearningItemFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +39,7 @@ public class LearningItemRecyclerViewAdapter extends RecyclerView.Adapter<Recycl
 
         switch (viewType) {
             case ITEM:
-                view = mInflater.inflate(R.layout.recyclerview_learning_header, parent, false);
+                view = mInflater.inflate(R.layout.recyclerview_learning_item, parent, false);
                 return new ViewHolderItem(view);
         }
 
@@ -51,10 +54,12 @@ public class LearningItemRecyclerViewAdapter extends RecyclerView.Adapter<Recycl
 
             case ITEM:
                 HashMap<String,String> item = items.get(position);
-                ViewHolderItem headerHolder = (ViewHolderItem) holder;
-                headerHolder.itemTV.setText(item.get("Title"));
-                headerHolder.refsTV.setText(item.get("Ref"));
-                if (item.get("ID") != null) headerHolder.ID = Integer.parseInt(item.get("ID"));
+                ViewHolderItem itemHolder = (ViewHolderItem) holder;
+                if (item != null) {
+                    itemHolder.itemTV.setText(item.get("Title"));
+                    itemHolder.refsTV.setText(item.get("Refs"));
+                    if (item.get("ID") != null) itemHolder.ID = Integer.parseInt(item.get("ID"));
+                }
                 break;
 
         }
@@ -72,20 +77,24 @@ public class LearningItemRecyclerViewAdapter extends RecyclerView.Adapter<Recycl
     public class ViewHolderItem extends RecyclerView.ViewHolder implements View.OnClickListener {
         TextView itemTV;
         TextView refsTV;
+        FrameLayout clickFL;
         Integer ID;
 
         ViewHolderItem(View itemView) {
             super(itemView);
             itemTV = itemView.findViewById(R.id.item_textView);
             refsTV = itemView.findViewById(R.id.refs_textView);
+            clickFL = itemView.findViewById(R.id.click_FL);
             //refTV = itemView.findViewById(R.id.refTV);
-            itemTV.setOnClickListener(this);
+            clickFL.setOnClickListener(this);
         }
 
         @Override
         public void onClick(View view) {
             if (mClickListener != null) mClickListener.onItemClick(view, getAdapterPosition());
-            Toast.makeText(view.getContext(), items.get(getAdapterPosition()).get("Title"), Toast.LENGTH_SHORT).show();
+
+            LearningItemFragment.initialiseDialogFragment(view.getContext(),refsTV.getText().toString());
+            LearningItemFragment.showDialogFragment(itemTV.getText().toString(),refsTV.getText().toString());
         }
     }
 

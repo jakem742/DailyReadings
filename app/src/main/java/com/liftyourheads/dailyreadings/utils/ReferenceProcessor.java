@@ -31,6 +31,9 @@ public class ReferenceProcessor {
     static String REFERENCE_BOOK = "Book";
     static String REFERENCE_FULL = "Long Name";
 
+    public static final String[][] BIBLE_REF = {{"Genesis","Gen"}, {"Exodus","Ex"}, {"Leviticus","Lev"}, {"Numbers","Num"}, {"Deuteronomy","Deut"}, {"Joshua","Josh"}, {"Judges","Judg"}, {"Ruth"}, {"1 Samuel", "1 Sam"}, {"2 Samuel", "2 Sam"}, {"1 Kings", "1 Kgs"}, {"2 Kings", "2 Kgs"}, {"1 Chronicles", "1 Chr"}, {"2 Chronicles", "2 Chr"}, {"Ezra"}, {"Nehemiah", "Neh"}, {"Esther", "Est"}, {"Job"}, {"Psalms", "Psa", "Ps"}, {"Proverbs", "Pro"}, {"Ecclesiastes", "Ecc"}, {"Song of Solomon", "Song"}, {"Isaiah", "Isa"}, {"Jeremiah", "Jer"}, {"Lamentations", "Lam"}, {"Ezekiel", "Eze", "Ezek"}, {"Daniel", "Dan"}, {"Hosea", "Hos"}, {"Joel"}, {"Amos"}, {"Obadiah", "Oba"}, {"Jonah", "Jon"}, {"Micah", "Mic"}, {"Nahum", "Nah"}, {"Habakkuk", "Hab"}, {"Zephaniah", "Zeph"}, {"Haggai", "Hag"}, {"Zechariah", "Zech"}, {"Malachi", "Mal"}, {"Matthew", "Matt", "Mat"}, {"Mark", "Mar","Mk"}, {"Luke", "Luk", "Lk"}, {"John", "Jn"}, {"Acts"}, {"Romans", "Rom"}, {"1 Corinthians", "1 Co", "1 Cor"}, {"2 Corinthians", "2 Co", "2 Cor"}, {"Galatians", "Gal"}, {"Ephesians", "Eph"}, {"Philippians", "Phil"}, {"Colossians", "Col"}, {"1 Thessalonians", "1 Thess", "1 Thes"}, {"2 Thessalonians", "2 Thess", "2 Thes"}, {"1 Timothy", "1 Tim"}, {"2 Timothy", "2 Tim"}, {"Titus", "Tit"}, {"Philemon", "Phm"}, {"Hebrews", "Heb"}, {"James", "Jas", "Jam"}, {"1 Peter", "1 Pet"}, {"2 Peter", "2 Pet"}, {"1 John", "1 Jn"}, {"2 John", "2 Jn"}, {"3 John", "3 Jn"}, {"Jude"}, {"Revelation", "Rev"}};
+
+
     public ReferenceProcessor(){
     }
 
@@ -93,7 +96,14 @@ public class ReferenceProcessor {
 
 
             Log.i(TAG,book);
-            String bookFull = BIBLE[Arrays.asList(BIBLE_ABBR).indexOf(book)];
+            int bookIndex = getBookIndex(book);
+            if (bookIndex == -1) {
+                Log.e(TAG,"Unable to find \"" + book + "\" in array!");
+                continue; // Means that the book is invalid!
+            }
+            String bookFull = BIBLE[bookIndex];
+            //String bookFull = BIBLE[Arrays.asList(BIBLE_ABBR).indexOf(book)];
+
             Log.i(TAG,"Book = " + bookFull + ", Chapter = " + chapter + ", Verses = " + verses + ", Verse Groups = " + Integer.toString(numVerseGroups));
 
             if (verses.contains("-")) { //If there are multiple verses in a row
@@ -185,6 +195,13 @@ public class ReferenceProcessor {
         return verseGroupList;
     }
 
+    public static int getBookIndex(String value) {
+        for (int book = 0; book < BIBLE_REF.length; book++)    {
+            List<String> rowvalues = Arrays.asList(BIBLE_REF[book]);
+            if(rowvalues.contains(value)) return book;
+        }
+        return -1;
+    }
 
     private static ArrayList<HashMap<String,String>> returnVerses(Context context, ArrayList<HashMap<String,String>> referenceList){
 
@@ -203,7 +220,7 @@ public class ReferenceProcessor {
                 String chapter = reference.get(REFERENCE_CHAPTER);
                 Log.i(TAG,"Book = " + book + ", Chapter = " + chapter + " Type = " + reference.get(REFERENCE_TYPE));
 
-                String fullBook = BIBLE[Arrays.asList(BIBLE_ABBR).indexOf(book)];
+                String fullBook = BIBLE[getBookIndex(book)];
 
                 //Get the current book number for use in verses db
                 Cursor bookCur = bibleDB.rawQuery("SELECT * FROM books WHERE long_name = \'" + fullBook + "\'", null);
@@ -252,6 +269,8 @@ public class ReferenceProcessor {
                     } while (reading.moveToNext());
 
                     reference.put("Text", readingText.toString().trim());
+                } else {
+                    Log.e(TAG,"Unable to find verse in DB: " + book + " " + chapter);
                 }
 
                 reading.close();

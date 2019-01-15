@@ -35,6 +35,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.crashlytics.android.BuildConfig;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.liftyourheads.dailyreadings.R;
 import com.liftyourheads.dailyreadings.adapters.ReadingSummaryRecyclerViewAdapter;
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     static MainViewPagerAdapter adapterViewPager;
     public static CustomViewPager mainViewPager;
     public BottomNavigationView navigation;
-    public TabLayout readingsTabs;
+    public static TabLayout readingsTabs;
     AppBarLayout appBar;
     static Dialog quotes_dialog;
     static RelativeLayout quotes_dialog_background_rl;
@@ -118,7 +119,11 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
+
+        if (!BuildConfig.DEBUG) { // only enable bug tracking in release version
+            Fabric.with(this, new Crashlytics());
+        }
+
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         setContentView(R.layout.activity_main);
 
@@ -467,9 +472,9 @@ public class MainActivity extends AppCompatActivity implements HomeFragment.OnFr
         mainViewPager.setCurrentItem(1);
 
         try {
-            MainActivity mainActivity = getActivity();
-            TabLayout tabs = mainActivity.findViewById(R.id.reading_tab_layout);
-            tabs.getTabAt(position).select();
+            //MainActivity mainActivity = getActivity();
+            //TabLayout tabs = mainActivity.findViewById(R.id.reading_tab_layout);
+            readingsTabs.getTabAt(position).select();
         } catch (Exception e) {
             e.printStackTrace();
         }
